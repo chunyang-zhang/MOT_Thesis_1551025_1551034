@@ -1,0 +1,143 @@
+#include "YOLOObjectDetection.h"
+using namespace cv;
+using namespace dnn;
+string YOLOObjectDetection::classesFile = "coco.names";
+String YOLOObjectDetection::modelConfiguration = "yolov3.cfg";
+String YOLOObjectDetection::modelWeights = "yolov3.weights";
+void YOLOObjectDetection::objectDetect (Mat& output)
+{
+	//convert to blob datatype to feed into network
+	Mat blob;
+	blobFromImage(output,blob,1/255.0, CvSize(inpWidth, inpHeight), Scalar(0, 0, 0), true, false);
+	net.setInput(blob);
+
+	// Runs the forward pass to get output of the output layers
+	vector<Mat> outs;
+	net.forward(outs, getOutputNames(net));
+	
+	//Remove bounding boxes with low confidence and overlapping bounding boxes.
+	postprocess(output, outs);
+	
+	//Put efficiency information. The function getPerProfile return the total processed time.
+	vector<double> layersTimes;
+	double freq = getTickFrequency() / 1000;
+	double t = net.getPerfProfile(layersTimes) / freq;
+	string label = format("Inference time for a frame : %.2f ms", t);
+	putText(output, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
+
+}
+void YOLOObjectDetection::postprocess(cv::Mat& frame, const vector<cv::Mat>& outs)
+{
+	clearResult();
+	// Scan through all the bounding boxes output from the network 
+	for (size_t i = 0; i < outs.size(); ++i)
+	{
+		//data for each guess
+		float* data = (float*)outs[i].data;
+		//Only select one with confidence higher than threshold
+		//one guess = many bounding boxes
+		for (int j = 0; j < outs[i].rows; ++j, data += outs[i].cols)
+		{
+			//get scores
+			Mat scores = outs[i].row(j).colRange(5, outs[i].cols);
+			Point classIdPoint;
+			double confidence;
+			// Get the value and location of the maximum score
+			//Only keep class with the highest confidence score
+			minMaxLoc(scores, 0, &confidence, 0, &classIdPoint);
+			if (confidence > confThreshold)
+			{
+				int centerX = (int)(data[0] * frame.cols);
+				int centerY = (int)(data[1] * frame.rows);
+				int width = (int)(data[2] * frame.cols);
+				int height = (int)(data[3] * frame.rows);
+				int left = centerX - width / 2;
+				int top = centerY - height / 2;
+
+				classIds.push_back(classIdPoint.x);
+				confidences.push_back((float)confidence);
+				boxes.push_back(Rect(left, top, width, height));
+			}
+		}
+	}
+
+	// Perform non maximum suppression to eliminate redundant overlapping boxes with
+	// lower confidences
+	NMSBoxes(boxes, confidences, confThreshold, nmsThreshold, indices);
+	
+}
+void YOLOObjectDetection::clearResult()
+{
+	classIds.clear();
+	confidences.clear();
+	boxes.clear();
+	indices.clear();
+}
+void YOLOObjectDetection::drawPrediction(cv::Mat& output)
+{
+	for (size_t i = 0; i < indices.size(); ++i)
+	{
+		int idx = indices[i];
+		Rect box = boxes[idx];
+		drawPrediction(classIds[idx], confidences[idx], box.x, box.y,
+			box.x + box.width, box.y + box.height, output);
+	}
+}
+
+void YOLOObjectDetection::drawPrediction(int classId, float conf, int left, int top, int right, int bottom, cv::Mat& frame)
+{
+	//Draw rectangle displaying the bounding box
+	rectangle(frame, Point(left, top), Point(right, bottom),Scalar(255,178,50),3);
+	//Get the label for the class name and its confidence
+	string label = format("%.2f", conf);
+	if (!classes.empty())
+	{
+		//class Id smaller than the total size
+		CV_Assert(classId < (int)classes.size());
+		label = classes[classId] + ":"+ label;
+	}
+	//Display the label at the top of the bounding box
+	int baseLine;
+	Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+	top = max(top, labelSize.height);
+	rectangle(frame, Point(left, top - round(1.5 * labelSize.height)), Point(left + round(1.5 * labelSize.width), top + baseLine), Scalar(255, 255, 255), FILLED);
+	putText(frame, label, Point(left, top), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 0));
+}
+//get the last layers name for forwarding into network
+vector<String> YOLOObjectDetection::getOutputNames(const Net& net)
+{
+	static vector<String> names;
+	//Get the indices of the output layers, i.e. the layers with unconnected outputs
+	vector<int> outLayers = net.getUnconnectedOutLayers();
+
+	//get the names of all the layers in the network
+	vector<String> layersNames = net.getLayerNames();
+
+	// Get the names of the output layers in names
+	names.resize(outLayers.size());
+	for (size_t i = 0; i < outLayers.size(); ++i)
+		names[i] = layersNames[outLayers[i] - 1];
+
+	return names;
+}
+YOLOObjectDetection::YOLOObjectDetection(float confThreshold, float nmsThreshold, float inpWidth, float inpHeight):
+confThreshold(confThreshold), nmsThreshold(nmsThreshold), inpWidth(inpWidth), inpHeight(inpHeight)
+{
+	//load the net work
+	net = readNetFromDarknet(modelConfiguration, modelWeights);
+	net.setPreferableBackend(DNN_BACKEND_OPENCV);
+	//to use for cpu, GPU: DNN_TARGET_OPENCL
+	net.setPreferableTarget(DNN_TARGET_CPU);
+
+	
+}
+YOLOObjectDetection::YOLOObjectDetection():
+confThreshold(0.5),nmsThreshold(0.4),inpWidth(416),inpHeight(416)
+{
+	//load the net work
+	net = readNetFromDarknet(modelConfiguration, modelWeights);
+	net.setPreferableBackend(DNN_BACKEND_OPENCV);
+	//to use for cpu, GPU: DNN_TARGET_OPENCL
+	net.setPreferableTarget(DNN_TARGET_CPU);
+
+}
