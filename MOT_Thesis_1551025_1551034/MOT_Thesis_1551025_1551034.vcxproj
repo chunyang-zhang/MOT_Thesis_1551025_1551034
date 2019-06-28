@@ -127,6 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BoundingBox.cpp" />
     <ClCompile Include="CameraIMUStreamer.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="DroneSlam.cpp" />
@@ -140,6 +141,7 @@
     <ClCompile Include="YOLOObjectDetection.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BoundingBox.h" />
     <ClInclude Include="CameraIMUStreamer.h" />
     <ClInclude Include="CameraParamters.h" />
     <ClInclude Include="CamerasIMUFrame.h" />
