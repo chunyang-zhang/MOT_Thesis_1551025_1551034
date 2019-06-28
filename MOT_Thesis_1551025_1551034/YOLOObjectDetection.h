@@ -27,6 +27,8 @@ private:
 	vector<float> confidences;
 	vector<cv::Rect> boxes;
 	vector<int> indices;
+
+
 	void clearResult();
 
 public:

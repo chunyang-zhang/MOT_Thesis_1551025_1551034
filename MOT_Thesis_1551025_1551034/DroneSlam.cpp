@@ -759,7 +759,6 @@ void DroneSlam::processFrame()
 	thread thread_Img_stream(&CameraIMUStreamer::threadReadImg, this->stream);
 	//sleep 1 s
 	this_thread::sleep_for(std::chrono::milliseconds(1000));
-
 	while (1)
 	{
 		if (!isReinstall)

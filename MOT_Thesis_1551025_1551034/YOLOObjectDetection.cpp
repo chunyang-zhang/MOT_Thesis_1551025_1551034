@@ -75,12 +75,16 @@ void YOLOObjectDetection::clearResult()
 }
 void YOLOObjectDetection::drawPrediction(cv::Mat& output)
 {
-	for (size_t i = 0; i < indices.size(); ++i)
+	if (!indices.empty())
 	{
-		int idx = indices[i];
-		Rect box = boxes[idx];
-		drawPrediction(classIds[idx], confidences[idx], box.x, box.y,
-			box.x + box.width, box.y + box.height, output);
+		for (size_t i = 0; i < indices.size(); ++i)
+		{
+			int idx = indices[i];
+			Rect box = boxes[idx];
+			drawPrediction(classIds[idx], confidences[idx], box.x, box.y,
+				box.x + box.width, box.y + box.height, output);
+		}
+
 	}
 }
 
@@ -123,17 +127,24 @@ vector<String> YOLOObjectDetection::getOutputNames(const Net& net)
 YOLOObjectDetection::YOLOObjectDetection(float confThreshold, float nmsThreshold, float inpWidth, float inpHeight):
 confThreshold(confThreshold), nmsThreshold(nmsThreshold), inpWidth(inpWidth), inpHeight(inpHeight)
 {
+	//Get class names
+	ifstream ifs(classesFile.c_str());
+	string line;
+	while (getline(ifs, line)) classes.push_back(line);
 	//load the net work
 	net = readNetFromDarknet(modelConfiguration, modelWeights);
 	net.setPreferableBackend(DNN_BACKEND_OPENCV);
 	//to use for cpu, GPU: DNN_TARGET_OPENCL
 	net.setPreferableTarget(DNN_TARGET_CPU);
 
-	
 }
 YOLOObjectDetection::YOLOObjectDetection():
 confThreshold(0.5),nmsThreshold(0.4),inpWidth(416),inpHeight(416)
 {
+	//Get class names
+	ifstream ifs(classesFile.c_str());
+	string line;
+	while (getline(ifs, line)) classes.push_back(line);
 	//load the net work
 	net = readNetFromDarknet(modelConfiguration, modelWeights);
 	net.setPreferableBackend(DNN_BACKEND_OPENCV);
