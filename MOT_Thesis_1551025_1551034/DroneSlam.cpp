@@ -271,13 +271,13 @@ Point3D DroneSlam::calculateCameraPose(FeatureStorageVector& localMap, Point3D& 
 	currCameraPos = ransac2PCameraPose(allA, allAxp, allObsVector, p3D_OfFeature, resultInliers);
 
 	//For Each feature local map, init Inliers = false, 
-	for (int i = 0; i < localMap.size(); i++)
+	for (size_t i = 0; i < localMap.size(); i++)
 	{
 		localMap[i].isInliers = false;
 		localMap[i].nOutliers++;
 	}
 	//check the valid inliers and update it. in local map (feature storage)
-	for (int i = 0; i < resultInliers.size(); i++)
+	for (size_t i = 0; i < resultInliers.size(); i++)
 	{
 
 		localMap[featuresHave3D[resultInliers[i]]].isInliers = true;
@@ -402,14 +402,14 @@ void DroneSlam::computeErrAndInliers(const Point3D& cameraPose, const Mat3x3Vect
 
 Point3D DroneSlam::computePose(const Mat3x3Vector& allA, const Point3DVector& allAxp, const vector<int>& points)
 {
-	int sizeP = points.size();
+	size_t sizeP = points.size();
 
 	// sum of A for all points
 	Mat3x3 A = Mat3x3::Zero();
 	Point3D Axp = Point3D(0, 0, 0);
 	//Sum of all A
 	//Sum of ALL A x world point
-	for (int i = 0; i < sizeP; i++)
+	for (size_t i = 0; i < sizeP; i++)
 	{
 		A += allA[points[i]];
 		Axp += allAxp[points[i]];
@@ -757,6 +757,11 @@ void DroneSlam::processFrame()
 	float roll, pitch, yaw;
 	//! run Img streamer thread
 	thread thread_Img_stream(&CameraIMUStreamer::threadReadImg, this->stream);
+	BoundingBox currBoundingBox;
+	BoundingBoxHelper boxHelper;
+	Mat detectFrame;
+	float ratio = 1.5f;
+	int left, top, right, bottom;
 	//sleep 1 s
 	this_thread::sleep_for(std::chrono::milliseconds(1000));
 	while (1)
@@ -882,6 +887,11 @@ void DroneSlam::processFrame()
 			// save last feature for next tracking
 			vector <Point2f> currKeyP;
 			currKeyP = keyPointConversion.KeyPoint2Point2f(keyPoints1);
+			//Object Detection
+			Mat image = frame->mainFrame;
+			cvtColor(image, image, CV_GRAY2RGB);
+			objectDetection->objectDetect(image);
+			currBoundingBox = objectDetection->getBestBoundingBox();
 			swap(currKeyP, prevKeyP);
 		}
 		else //next tracking frame
@@ -902,13 +912,32 @@ void DroneSlam::processFrame()
 
 				//! tracking by KLT
 				calcOpticalFlowPyrLK(frame->preMainFrame, frame->mainFrame, prevKeyP, currKeyP, status, err, winSize, 3, termcrit, 0, 0.001);
-				Mat colorFrame;
 				Mat image = frame->mainFrame;
+				//Detection with only the surrounding bounding box regions.
 				cvtColor(image, image, CV_GRAY2RGB);
-				objectDetection->objectDetect(image);
-
-
-				objectDetection->drawPrediction(image);
+				Rect bRect = currBoundingBox.getRegion();
+				Rect processBounding;
+				//Support function
+				processBounding = boxHelper.getNewBoundingBox(bRect, ratio, image.rows, image.cols);
+				//Surrounding Object For Detection
+				detectFrame = image(processBounding);
+				//Detect
+				//Try tracking method later.
+				objectDetection->objectDetect(detectFrame);
+				//Get bounding box
+				//get box with the same class Id with the original and also best Confidence.
+				BoundingBox croppedBoxResult = objectDetection->getBestBoundingBox();
+				//Convert to original size
+				//width height the same
+				Rect originalBoundingBox = boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y);
+				//New bounding box
+				//Set new bounding to currboundingBox
+				currBoundingBox.setRegion(originalBoundingBox);
+				left = originalBoundingBox.x;
+				top = originalBoundingBox.y;
+				right = originalBoundingBox.x + originalBoundingBox.width;
+				bottom = originalBoundingBox.y + originalBoundingBox.height;
+				objectDetection->drawPrediction(croppedBoxResult.getClassId(),croppedBoxResult.getConfidence(),left,top,right,bottom,image);
 				for (int k = 0; k < currKeyP.size(); k++)
 				{
 					if (!status[k])
@@ -1165,6 +1194,7 @@ void DroneSlam::drawGPSResult(Mat& result)
 	}
 	file.close();
 }
+
 
 DroneSlam::DroneSlam()
 {

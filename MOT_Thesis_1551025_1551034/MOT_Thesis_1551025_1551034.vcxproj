@@ -128,6 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BoundingBox.cpp" />
+    <ClCompile Include="BoundingBoxHelper.cpp" />
     <ClCompile Include="CameraIMUStreamer.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="DroneSlam.cpp" />
@@ -142,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BoundingBox.h" />
+    <ClInclude Include="BoundingBoxHelper.h" />
     <ClInclude Include="CameraIMUStreamer.h" />
     <ClInclude Include="CameraParamters.h" />
     <ClInclude Include="CamerasIMUFrame.h" />

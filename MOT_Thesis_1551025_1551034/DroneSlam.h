@@ -10,6 +10,8 @@
 #include<WinSock2.h>
 #include<Eigen\src\Core\IO.h>
 #include"YOLOObjectDetection.h"
+#include"BoundingBoxHelper.h"
+#include"BoundingBox.h"
 #pragma comment(lib,"ws2_32.lib") //Winsock Library
 
 class DroneSlam

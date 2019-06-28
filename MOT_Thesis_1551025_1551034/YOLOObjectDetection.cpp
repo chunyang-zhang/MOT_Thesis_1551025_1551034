@@ -73,6 +73,34 @@ void YOLOObjectDetection::clearResult()
 	boxes.clear();
 	indices.clear();
 }
+BoundingBox YOLOObjectDetection::getBestBoundingBox()
+{
+	BoundingBox bb;
+	int idx;
+	float confidence;
+	int bestIdx;
+	//get index of max confidence
+	if (!indices.empty())
+	{
+		idx = indices[0];
+		bestIdx = idx;
+		confidence = confidences[idx];
+		//Max(
+		for (size_t i = 1; i < indices.size(); ++i)
+		{
+			idx = indices[i];
+			if (confidence < confidences[idx])
+			{
+				confidence = confidences[idx];
+				bestIdx = idx;
+			}
+		}
+		bb.setClassId(bestIdx);
+		bb.setConfidence(confidence);
+		bb.setRegion(boxes[bestIdx]);
+	}
+	return bb;
+}
 void YOLOObjectDetection::drawPrediction(cv::Mat& output)
 {
 	if (!indices.empty())
