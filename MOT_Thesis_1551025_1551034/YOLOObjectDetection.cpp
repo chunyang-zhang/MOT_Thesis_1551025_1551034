@@ -19,11 +19,11 @@ void YOLOObjectDetection::objectDetect (Mat& output)
 	postprocess(output, outs);
 	
 	//Put efficiency information. The function getPerProfile return the total processed time.
-	vector<double> layersTimes;
-	double freq = getTickFrequency() / 1000;
-	double t = net.getPerfProfile(layersTimes) / freq;
-	string label = format("Inference time for a frame : %.2f ms", t);
-	putText(output, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
+	//vector<double> layersTimes;
+	//double freq = getTickFrequency() / 1000;
+	//double t = net.getPerfProfile(layersTimes) / freq;
+	//string label = format("Inference time for a frame : %.2f ms", t);
+	//putText(output, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
 
 }
 BoundingBox YOLOObjectDetection::getRelatedBoundingBox(int classId)

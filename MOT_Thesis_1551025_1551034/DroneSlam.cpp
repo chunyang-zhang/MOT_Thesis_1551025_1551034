@@ -739,7 +739,7 @@ bool DroneSlam::readAllIMU()
 
 string float2string(float& number)
 {
-	std::ostringstream buff;
+	ostringstream buff;
 	buff << number;
 	return buff.str();
 }
@@ -758,11 +758,14 @@ void DroneSlam::processFrame()
 	//! run Img streamer thread
 	thread thread_Img_stream(&CameraIMUStreamer::threadReadImg, this->stream);
 	BoundingBox currBoundingBox;
+	Rect2d bbox;
 	BoundingBoxHelper boxHelper;
 	Mat detectFrame;
-	float ratio = 1.5f;
+	float ratio = 2.0f;
 	int left, top, right, bottom;
 	int firstDetectedId;
+	//Testing Tracker CSRT
+	Ptr<Tracker> tracker = TrackerCSRT::create();
 	//sleep 1 s
 	this_thread::sleep_for(std::chrono::milliseconds(1000));
 	while (1)
@@ -894,6 +897,9 @@ void DroneSlam::processFrame()
 			objectDetection->objectDetect(image);
 			currBoundingBox = objectDetection->getBestBoundingBox();
 			firstDetectedId = currBoundingBox.getClassId();
+			Rect tmpRect = currBoundingBox.getRegion();
+			bbox = Rect2d(tmpRect.x,tmpRect.y,tmpRect.width,tmpRect.height);
+			tracker->init(image, bbox);
 			cout <<"Class ID:"<< firstDetectedId << endl;
 			swap(currKeyP, prevKeyP);
 		}
@@ -923,24 +929,28 @@ void DroneSlam::processFrame()
 				//Support function
 				processBounding = boxHelper.getNewBoundingBox(bRect, ratio, image.rows, image.cols);
 				//Surrounding Object For Detection
-				detectFrame = image(processBounding);
+				//detectFrame = image(processBounding);
+				//Tracking
+				bool ok = tracker->update(image, bbox);
 				//Detect
-				//Try tracking method later.
-				objectDetection->objectDetect(detectFrame);
+				//objectDetection->objectDetect(detectFrame);
 				//Get bounding box
 				//get box with the same class Id with the original and also best Confidence.
-				BoundingBox croppedBoxResult = objectDetection->getRelatedBoundingBox(firstDetectedId);
+				//BoundingBox croppedBoxResult = objectDetection->getRelatedBoundingBox(firstDetectedId);
 				//Convert to original size
 				//width height the same
-				Rect originalBoundingBox = boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y);
+				//Rect originalBoundingBox = boxHelper.getOriginalBoundingBox(Rect(bbox), processBounding.x, processBounding.y);
 				//New bounding box
 				//Set new bounding to currboundingBox
-				currBoundingBox.setRegion(originalBoundingBox);
-				left = originalBoundingBox.x;
-				top = originalBoundingBox.y;
-				right = originalBoundingBox.x + originalBoundingBox.width;
-				bottom = originalBoundingBox.y + originalBoundingBox.height;
-				objectDetection->drawPrediction(croppedBoxResult.getClassId(),croppedBoxResult.getConfidence(),left,top,right,bottom,image);
+				currBoundingBox.setRegion(Rect(bbox));
+				left = bbox.x;
+				top = bbox.y;
+				right = bbox.x + bbox.width;
+				bottom = bbox.y + bbox.height;
+				
+
+				objectDetection->drawPrediction(currBoundingBox.getClassId(),currBoundingBox.getConfidence(),left,top,right,bottom,image);
+				
 				for (int k = 0; k < currKeyP.size(); k++)
 				{
 					if (!status[k])

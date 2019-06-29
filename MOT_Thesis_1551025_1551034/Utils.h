@@ -17,7 +17,9 @@
 #include <assert.h>
 #include <opencv2/xfeatures2d.hpp>
 #include <opencv2/xfeatures2d/nonfree.hpp>
+#include <opencv2/core/ocl.hpp>
 
+#include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/opencv.hpp>
