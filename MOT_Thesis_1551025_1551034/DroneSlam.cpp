@@ -762,6 +762,7 @@ void DroneSlam::processFrame()
 	Mat detectFrame;
 	float ratio = 1.5f;
 	int left, top, right, bottom;
+	int firstDetectedId;
 	//sleep 1 s
 	this_thread::sleep_for(std::chrono::milliseconds(1000));
 	while (1)
@@ -892,6 +893,8 @@ void DroneSlam::processFrame()
 			cvtColor(image, image, CV_GRAY2RGB);
 			objectDetection->objectDetect(image);
 			currBoundingBox = objectDetection->getBestBoundingBox();
+			firstDetectedId = currBoundingBox.getClassId();
+			cout <<"Class ID:"<< firstDetectedId << endl;
 			swap(currKeyP, prevKeyP);
 		}
 		else //next tracking frame
@@ -926,7 +929,7 @@ void DroneSlam::processFrame()
 				objectDetection->objectDetect(detectFrame);
 				//Get bounding box
 				//get box with the same class Id with the original and also best Confidence.
-				BoundingBox croppedBoxResult = objectDetection->getBestBoundingBox();
+				BoundingBox croppedBoxResult = objectDetection->getRelatedBoundingBox(firstDetectedId);
 				//Convert to original size
 				//width height the same
 				Rect originalBoundingBox = boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y);

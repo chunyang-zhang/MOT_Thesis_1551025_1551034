@@ -37,5 +37,6 @@ public:
 	YOLOObjectDetection(float confThreshold, float nmsThreshold, float inpWidth, float inpHeight);
 	YOLOObjectDetection();
 	void objectDetect(cv::Mat& output );
+	BoundingBox getRelatedBoundingBox(int classId);
 };
 

@@ -26,6 +26,30 @@ void YOLOObjectDetection::objectDetect (Mat& output)
 	putText(output, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
 
 }
+BoundingBox YOLOObjectDetection::getRelatedBoundingBox(int classId)
+{
+	BoundingBox bb;
+	int idx;
+	int bestIdx=0;
+	//get the first relevant bounding box
+	if (!indices.empty())
+	{
+		//Max(
+		for (size_t i = 0; i < indices.size(); ++i)
+		{
+			idx = indices[i];
+			if (idx == classId)
+			{
+				bestIdx = idx;
+				break;
+			}
+		}
+		bb.setClassId(bestIdx);
+		bb.setConfidence(confidences[bestIdx]);
+		bb.setRegion(boxes[bestIdx]);
+	}
+	return bb;
+}
 void YOLOObjectDetection::postprocess(cv::Mat& frame, const vector<cv::Mat>& outs)
 {
 	clearResult();
@@ -167,7 +191,7 @@ confThreshold(confThreshold), nmsThreshold(nmsThreshold), inpWidth(inpWidth), in
 
 }
 YOLOObjectDetection::YOLOObjectDetection():
-confThreshold(0.5),nmsThreshold(0.4),inpWidth(416),inpHeight(416)
+confThreshold(0.5),nmsThreshold(0.2),inpWidth(416),inpHeight(416)
 {
 	//Get class names
 	ifstream ifs(classesFile.c_str());
