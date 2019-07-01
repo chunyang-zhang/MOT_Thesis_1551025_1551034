@@ -8,7 +8,7 @@ public:
 	void setConfidence(float confid);
 	void setRegion(cv::Rect bbox);
 	int getClassId();
-	int getConfidence();
+	float getConfidence();
 	cv::Rect getRegion();
 private:
 	int classId;

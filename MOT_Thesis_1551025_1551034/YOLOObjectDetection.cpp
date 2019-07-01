@@ -31,6 +31,7 @@ BoundingBox YOLOObjectDetection::getRelatedBoundingBox(int classId)
 	BoundingBox bb;
 	int idx;
 	int bestIdx=0;
+	int idxBox = 0;
 	//get the first relevant bounding box
 	if (!indices.empty())
 	{
@@ -41,12 +42,13 @@ BoundingBox YOLOObjectDetection::getRelatedBoundingBox(int classId)
 			if (idx == classId)
 			{
 				bestIdx = idx;
+				idxBox = i;
 				break;
 			}
 		}
 		bb.setClassId(bestIdx);
 		bb.setConfidence(confidences[bestIdx]);
-		bb.setRegion(boxes[bestIdx]);
+		bb.setRegion(boxes[idxBox]);
 	}
 	return bb;
 }
@@ -103,6 +105,7 @@ BoundingBox YOLOObjectDetection::getBestBoundingBox()
 	int idx;
 	float confidence;
 	int bestIdx;
+	int idxBox = 0;
 	//get index of max confidence
 	if (!indices.empty())
 	{
@@ -117,11 +120,12 @@ BoundingBox YOLOObjectDetection::getBestBoundingBox()
 			{
 				confidence = confidences[idx];
 				bestIdx = idx;
+				idxBox = i;
 			}
 		}
 		bb.setClassId(bestIdx);
 		bb.setConfidence(confidence);
-		bb.setRegion(boxes[bestIdx]);
+		bb.setRegion(boxes[idxBox]);
 	}
 	return bb;
 }
@@ -132,7 +136,7 @@ void YOLOObjectDetection::drawPrediction(cv::Mat& output)
 		for (size_t i = 0; i < indices.size(); ++i)
 		{
 			int idx = indices[i];
-			Rect box = boxes[idx];
+			Rect box = boxes[i];
 			drawPrediction(classIds[idx], confidences[idx], box.x, box.y,
 				box.x + box.width, box.y + box.height, output);
 		}

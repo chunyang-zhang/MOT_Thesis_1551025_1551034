@@ -23,7 +23,7 @@ int BoundingBox::getClassId()
 	return classId;
 }
 
-int BoundingBox::getConfidence()
+float BoundingBox::getConfidence()
 {
 	return confidence;
 }
