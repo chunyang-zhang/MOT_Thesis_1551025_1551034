@@ -96,11 +96,14 @@ private:
 	// IMU reader
 	bool readIMU(float& roll, float& pitch, float& yaw, double& time);
 	bool readAllIMU();
-
+	
 
 	// compute rotation matrix from IMU
 	Mat3x3 getRotationMatrix(float roll, float pitch, float yaw);
-	 void drawGPSResult(cv::Mat& result);
+	void drawGPSResult(cv::Mat& result);
+
+	//Find Feature Point inside the 2D bounding 
+	void findFeaturePoints(Point3DVector & pointsInside2DBox, cv::Rect boundingBox);
 public:
 	DroneSlam();
 	~DroneSlam();

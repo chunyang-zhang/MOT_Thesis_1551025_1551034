@@ -4,7 +4,7 @@ using namespace dnn;
 string YOLOObjectDetection::classesFile = "coco.names";
 String YOLOObjectDetection::modelConfiguration = "yolov3.cfg";
 String YOLOObjectDetection::modelWeights = "yolov3.weights";
-void YOLOObjectDetection::objectDetect (Mat& output)
+bool YOLOObjectDetection::objectDetect (Mat& output)
 {
 	//convert to blob datatype to feed into network
 	Mat blob;
@@ -24,6 +24,12 @@ void YOLOObjectDetection::objectDetect (Mat& output)
 	//double t = net.getPerfProfile(layersTimes) / freq;
 	//string label = format("Inference time for a frame : %.2f ms", t);
 	//putText(output, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
+	//There is no object available in frame
+	if (indices.size()==0)
+	{
+		return false;
+	}
+	return true;
 
 }
 BoundingBox YOLOObjectDetection::getRelatedBoundingBox(int classId)
@@ -33,7 +39,10 @@ BoundingBox YOLOObjectDetection::getRelatedBoundingBox(int classId)
 	int bestIdx=0;
 	int idxBox = 0;
 	//get the first relevant bounding box
-	if (!indices.empty())
+	//store all the relevant bounding box
+	vector<int> relevantIdx;
+	//get one with the highest IoU
+	if (indices.size()!=0)
 	{
 		//Max(
 		for (size_t i = 0; i < indices.size(); ++i)
@@ -41,11 +50,10 @@ BoundingBox YOLOObjectDetection::getRelatedBoundingBox(int classId)
 			idx = indices[i];
 			if (idx == classId)
 			{
-				bestIdx = idx;
-				idxBox = i;
-				break;
+				relevantIdx.push_back(i);
 			}
 		}
+
 		bb.setClassId(bestIdx);
 		bb.setConfidence(confidences[bestIdx]);
 		bb.setRegion(boxes[idxBox]);
@@ -131,7 +139,7 @@ BoundingBox YOLOObjectDetection::getBestBoundingBox()
 }
 void YOLOObjectDetection::drawPrediction(cv::Mat& output)
 {
-	if (!indices.empty())
+	if (indices.size() != 0)
 	{
 		for (size_t i = 0; i < indices.size(); ++i)
 		{

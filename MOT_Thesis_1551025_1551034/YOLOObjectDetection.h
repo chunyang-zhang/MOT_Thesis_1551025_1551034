@@ -36,7 +36,8 @@ public:
 	void drawPrediction(cv::Mat& output);
 	YOLOObjectDetection(float confThreshold, float nmsThreshold, float inpWidth, float inpHeight);
 	YOLOObjectDetection();
-	void objectDetect(cv::Mat& output );
+	bool objectDetect(cv::Mat& output );
 	BoundingBox getRelatedBoundingBox(int classId);
+	float calculateIoU(const cv::Mat& groundTruth, cv::Mat& detectBox);
 };
 
