@@ -763,8 +763,6 @@ void DroneSlam::processFrame()
 	Mat detectFrame;
 	bool checkDetect = false;
 	float ratio = 1.2f;
-	float tmpRatio = ratio;
-
 	int left, top, right, bottom;
 	int firstDetectedId =0;
 	//Testing Tracker CSRT
@@ -907,9 +905,16 @@ void DroneSlam::processFrame()
 			//update if got reinstall still use the current surrounding bounding box
 			else {
 				int idxRatio = 0;
+				float tmpRatio = ratio;
 				Rect bRect = currBoundingBox.getRegion();
+				bool checkValid = true;
 				while (!checkDetect)
 				{
+					if (idxRatio > 20) {
+						checkValid = false;
+						break;
+					}
+					cout << "Change Box Size 1 Time" << endl;
 					tmpRatio += 0.1 * idxRatio;
 					//get small surrounding frame
 					processBounding = boxHelper.getNewBoundingBox(bRect, tmpRatio, image.rows, image.cols);
@@ -919,16 +924,22 @@ void DroneSlam::processFrame()
 					//bool ok = tracker->update(image, bbox);
 					//Detect
 					checkDetect = objectDetection->objectDetect(detectFrame);
+					if (checkDetect)
+					{
+						//get box with the same class Id with the original and also best IoU with original boundingbox
+						checkDetect = objectDetection->getRelatedBoundingBox(firstDetectedId, bRect, processBounding, croppedBoxResult);					
+					}
 					idxRatio += 2;
 				}
-				checkDetect = false;
-				//Get bounding box
-				//get box with the same class Id with the original and also best Confidence.
-				croppedBoxResult = objectDetection->getRelatedBoundingBox(firstDetectedId);
-				//Convert to original size
-				//width height the same
-				originalBoundingBox = boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y);
-				currBoundingBox.setRegion(originalBoundingBox);
+				//keep the same bounding box if cant not find any.
+				if (checkValid)
+				{
+					checkDetect = false;
+					//Convert to original size
+					//width height the same
+					originalBoundingBox = boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y);
+					currBoundingBox.setRegion(originalBoundingBox);
+				}
 			}
 			//Rect tmpRect = currBoundingBox.getRegion();
 			//findFeaturePoints(pointsInside2DBox, tmpRect);
@@ -963,32 +974,46 @@ void DroneSlam::processFrame()
 				//If the output is none
 				//Increase the ratio of processing bounding box -> 1.2 1.4
 				int idxRatio = 0;
+				float tmpRatio = ratio;
+				bool checkValid = true;
 				while (!checkDetect)
 				{
+
+					if (idxRatio > 20) {
+						checkValid = false;
+						break;
+					}
+					cout << "Change Box Size 1 Time" << endl;
 					tmpRatio += 0.1*idxRatio;
 					//get small surrounding frame
 					processBounding = boxHelper.getNewBoundingBox(bRect, tmpRatio, image.rows, image.cols);
 					//Surrounding Object For Detection
-					detectFrame = image(processBounding);
+					detectFrame = image(processBounding).clone();
 					//Tracking
 					//bool ok = tracker->update(image, bbox);
 					//Detect
 					checkDetect = objectDetection->objectDetect(detectFrame);
+					if (checkDetect)
+					{
+						//get bounding box with the same class ID and bounding 
+						checkDetect = objectDetection->getRelatedBoundingBox(firstDetectedId, bRect, processBounding, croppedBoxResult);
+					}
 					idxRatio+=2;
 				}
-				checkDetect = false;
+				if (checkValid)
+				{
+					checkDetect = false;
 
-				//Get bounding box
-				//get box with the same class Id with the original and also best Confidence.
-				croppedBoxResult = objectDetection->getRelatedBoundingBox(firstDetectedId);
-				//Convert to original size
-				//width height the same
-				originalBoundingBox = boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y);
-				//New bounding box
-				//Set new bounding to currboundingBox(tracking)
-				//currBoundingBox.setRegion(Rect(bbox));
-				//Detection
-				currBoundingBox.setRegion(originalBoundingBox);
+					//Get bounding box
+					//Convert to original size
+					originalBoundingBox = boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y);
+					//width height the same
+					//New bounding box
+					//Set new bounding to currboundingBox(tracking)
+					//currBoundingBox.setRegion(Rect(bbox));
+					//Detection
+					currBoundingBox.setRegion(originalBoundingBox);
+				}
 				left = originalBoundingBox.x;
 				top = originalBoundingBox.y;
 				right = originalBoundingBox.x + originalBoundingBox.width;

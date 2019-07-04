@@ -1,8 +1,9 @@
 #pragma once
-#include"Utils.h"
-#include<opencv2/dnn.hpp>
-#include<opencv2/core/types_c.h>
-#include"BoundingBox.h"
+#include "Utils.h"
+#include <opencv2/dnn.hpp>
+#include <opencv2/core/types_c.h>
+#include "BoundingBox.h"
+#include "BoundingBoxHelper.h"
 class YOLOObjectDetection
 {
 private:
@@ -37,7 +38,7 @@ public:
 	YOLOObjectDetection(float confThreshold, float nmsThreshold, float inpWidth, float inpHeight);
 	YOLOObjectDetection();
 	bool objectDetect(cv::Mat& output );
-	BoundingBox getRelatedBoundingBox(int classId);
-	float calculateIoU(const cv::Mat& groundTruth, cv::Mat& detectBox);
+	bool getRelatedBoundingBox(int classId,const cv::Rect& bRect, const cv::Rect& processedBounding, BoundingBox& bb);
+	float calculateIoU(const cv::Rect& boxA, const cv::Rect& boxB);
 };
 

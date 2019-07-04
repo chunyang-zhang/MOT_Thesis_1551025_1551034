@@ -14,7 +14,8 @@ bool YOLOObjectDetection::objectDetect (Mat& output)
 	// Runs the forward pass to get output of the output layers
 	vector<Mat> outs;
 	net.forward(outs, getOutputNames(net));
-	
+	//imshow("image", output);
+	//waitKey(0);
 	//Remove bounding boxes with low confidence and overlapping bounding boxes.
 	postprocess(output, outs);
 	
@@ -25,6 +26,9 @@ bool YOLOObjectDetection::objectDetect (Mat& output)
 	//string label = format("Inference time for a frame : %.2f ms", t);
 	//putText(output, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
 	//There is no object available in frame
+	drawPrediction(output);
+	//imshow("image", output);
+	//waitKey(0);
 	if (indices.size()==0)
 	{
 		return false;
@@ -32,33 +36,81 @@ bool YOLOObjectDetection::objectDetect (Mat& output)
 	return true;
 
 }
-BoundingBox YOLOObjectDetection::getRelatedBoundingBox(int classId)
+bool YOLOObjectDetection::getRelatedBoundingBox(int classId, const Rect& bRect, const Rect& processedBounding, BoundingBox &bb)
 {
-	BoundingBox bb;
+
 	int idx;
-	int bestIdx=0;
-	int idxBox = 0;
+	int bestIdx = 0;
 	//get the first relevant bounding box
 	//store all the relevant bounding box
 	vector<int> relevantIdx;
-	//get one with the highest IoU
-	if (indices.size()!=0)
+	vector<float>relevantIoUList;
+	float bestIoU = 0;
+	int bestRelevantIoU = 0;
+	float iou;
+	float iouThreshold = 0.65f;
+	BoundingBoxHelper helper;
+	Rect tmpBox;
+
+	if (indices.size() != 0)
 	{
 		//Max(
 		for (size_t i = 0; i < indices.size(); ++i)
 		{
 			idx = indices[i];
+			tmpBox = helper.getOriginalBoundingBox(boxes[idx], processedBounding.x, processedBounding.y);
+			iou = calculateIoU(tmpBox, bRect);
+			//Find box with the best IOU 
+			if (iou > bestIoU &&iou>iouThreshold)
+			{
+				bestIoU = iou;
+				bestIdx = idx;
+			}
 			if (idx == classId)
 			{
-				relevantIdx.push_back(i);
+				if (iou > iouThreshold)
+				{
+					relevantIdx.push_back(i);
+					relevantIoUList.push_back(iou);
+				}
 			}
 		}
-
-		bb.setClassId(bestIdx);
+		//get one with the highest IoU, but with the same class of the original
+		for (size_t i = 0;i < relevantIdx.size();i++)
+		{
+			idx = indices[relevantIdx[i]];
+			iou = relevantIoUList[i];
+			if (iou > bestRelevantIoU && iou>iouThreshold)
+			{
+				bestIoU = iou;
+				bestIdx = idx;
+			}
+		}
+		//there is not any IoU and no relevant class
+		if (bestIoU <= 0 && relevantIdx.size() == 0)
+		{
+			return false;
+		}
+		bb.setClassId(classIds[bestIdx]);
 		bb.setConfidence(confidences[bestIdx]);
-		bb.setRegion(boxes[idxBox]);
+		bb.setRegion(boxes[bestIdx]);
+		cout <<"The best IOU:"<< bestIoU << endl;
 	}
-	return bb;
+	return true;
+}
+
+float YOLOObjectDetection::calculateIoU(const Rect& boxA, const Rect& boxB)
+{
+	int x1 = MAX(boxA.x, boxB.x);
+	int y1 = MAX(boxA.y, boxB.y);
+	int x2 = MIN(boxA.x + boxA.width, boxB.x + boxB.width);
+	int y2 = MIN(boxA.y + boxA.height, boxB.y + boxB.height);
+	
+	int interArea = MAX(0, x2 - x1 + 1) * MAX(0, y2 - y1 + 1);
+	int area1 = boxA.width * boxB.height;
+	int area2 = boxB.width * boxB.height;
+	float iou = 1.0 * interArea / (area1 + area2 - interArea);
+	return iou;
 }
 void YOLOObjectDetection::postprocess(cv::Mat& frame, const vector<cv::Mat>& outs)
 {
@@ -98,7 +150,7 @@ void YOLOObjectDetection::postprocess(cv::Mat& frame, const vector<cv::Mat>& out
 	// Perform non maximum suppression to eliminate redundant overlapping boxes with
 	// lower confidences
 	NMSBoxes(boxes, confidences, confThreshold, nmsThreshold, indices);
-	
+
 }
 void YOLOObjectDetection::clearResult()
 {
@@ -113,7 +165,6 @@ BoundingBox YOLOObjectDetection::getBestBoundingBox()
 	int idx;
 	float confidence;
 	int bestIdx;
-	int idxBox = 0;
 	//get index of max confidence
 	if (!indices.empty())
 	{
@@ -128,12 +179,11 @@ BoundingBox YOLOObjectDetection::getBestBoundingBox()
 			{
 				confidence = confidences[idx];
 				bestIdx = idx;
-				idxBox = i;
 			}
 		}
-		bb.setClassId(bestIdx);
+		bb.setClassId(classIds[bestIdx]);
 		bb.setConfidence(confidence);
-		bb.setRegion(boxes[idxBox]);
+		bb.setRegion(boxes[bestIdx]);
 	}
 	return bb;
 }
@@ -144,7 +194,7 @@ void YOLOObjectDetection::drawPrediction(cv::Mat& output)
 		for (size_t i = 0; i < indices.size(); ++i)
 		{
 			int idx = indices[i];
-			Rect box = boxes[i];
+			Rect box = boxes[idx];
 			drawPrediction(classIds[idx], confidences[idx], box.x, box.y,
 				box.x + box.width, box.y + box.height, output);
 		}
@@ -203,7 +253,7 @@ confThreshold(confThreshold), nmsThreshold(nmsThreshold), inpWidth(inpWidth), in
 
 }
 YOLOObjectDetection::YOLOObjectDetection():
-confThreshold(0.5),nmsThreshold(0.2),inpWidth(416),inpHeight(416)
+confThreshold(0.5),nmsThreshold(0.5),inpWidth(416),inpHeight(416)
 {
 	//Get class names
 	ifstream ifs(classesFile.c_str());
