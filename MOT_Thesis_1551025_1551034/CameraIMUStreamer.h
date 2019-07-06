@@ -34,13 +34,14 @@ private:
 public: 
 
 	// Inherited via InputStreamer
-	 bool connect() ;
+	bool connect() ;
 
-	 void disconnect() ;
+	void disconnect() ;
 
-	 bool read(CamerasIMUFrame::Ptr &frame) ;
+	bool read(CamerasIMUFrame::Ptr &frame) ;
 	CameraIMUStreamer();
 	void threadReadImg();
 	ofstream outGPSandPose;
+	int getNumFrames();
 };
 

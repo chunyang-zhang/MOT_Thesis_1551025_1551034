@@ -48,7 +48,6 @@ bool YOLOObjectDetection::getRelatedBoundingBox(int classId, const Rect& bRect, 
 	float bestIoU = 0;
 	int bestRelevantIoU = 0;
 	float iou;
-	float iouThreshold = 0.65f;
 	BoundingBoxHelper helper;
 	Rect tmpBox;
 
@@ -61,12 +60,12 @@ bool YOLOObjectDetection::getRelatedBoundingBox(int classId, const Rect& bRect, 
 			tmpBox = helper.getOriginalBoundingBox(boxes[idx], processedBounding.x, processedBounding.y);
 			iou = calculateIoU(tmpBox, bRect);
 			//Find box with the best IOU 
-			if (iou > bestIoU &&iou>iouThreshold)
+			if (iou > bestIoU &&iou>0.7)
 			{
 				bestIoU = iou;
 				bestIdx = idx;
 			}
-			if (idx == classId)
+			if (classIds[idx] == classId)
 			{
 				if (iou > iouThreshold)
 				{
@@ -202,6 +201,11 @@ void YOLOObjectDetection::drawPrediction(cv::Mat& output)
 	}
 }
 
+void YOLOObjectDetection::setIoUThreshold(float iouRatio)
+{
+	iouThreshold *= iouRatio;
+}
+
 void YOLOObjectDetection::drawPrediction(int classId, float conf, int left, int top, int right, int bottom, cv::Mat& frame)
 {
 	//Draw rectangle displaying the bounding box
@@ -241,6 +245,7 @@ vector<String> YOLOObjectDetection::getOutputNames(const Net& net)
 YOLOObjectDetection::YOLOObjectDetection(float confThreshold, float nmsThreshold, float inpWidth, float inpHeight):
 confThreshold(confThreshold), nmsThreshold(nmsThreshold), inpWidth(inpWidth), inpHeight(inpHeight)
 {
+	iouThreshold = 0.65f;
 	//Get class names
 	ifstream ifs(classesFile.c_str());
 	string line;
@@ -264,5 +269,6 @@ confThreshold(0.5),nmsThreshold(0.5),inpWidth(416),inpHeight(416)
 	net.setPreferableBackend(DNN_BACKEND_OPENCV);
 	//to use for cpu, GPU: DNN_TARGET_OPENCL
 	net.setPreferableTarget(DNN_TARGET_CPU);
+	iouThreshold = 0.65f;
 
 }

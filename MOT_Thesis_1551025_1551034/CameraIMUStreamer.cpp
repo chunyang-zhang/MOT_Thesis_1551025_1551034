@@ -58,6 +58,10 @@ void CameraIMUStreamer::disconnect()
 
 bool CameraIMUStreamer::read(CamerasIMUFrame::Ptr &frame)
 {
+	if (frameCounter >= numFrames)
+	{
+		return false;
+	}
 	while (imgStreamId == frameCounter)
 	{
 		cout << "wait Thread!" << endl;
@@ -92,7 +96,7 @@ void CameraIMUStreamer::threadReadImg()
 			cout << "Finish!" << endl;
 			//close position file
 			outGPSandPose.close();
-			exit(0);
+			break;
 		}
 		if (imgStreamId == frameCounter) 
 		{
@@ -127,4 +131,9 @@ void CameraIMUStreamer::threadReadImg()
 			imgStreamId++;
 		}
 	}
+}
+
+int CameraIMUStreamer::getNumFrames()
+{
+	return numFrames;
 }

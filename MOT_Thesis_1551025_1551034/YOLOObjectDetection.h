@@ -29,8 +29,9 @@ private:
 	vector<int> indices;
 	BoundingBox bbox;
 	void clearResult();
-	
+	float iouThreshold;
 public:
+	void setIoUThreshold(float iouRatio);
 	//Draw predicted bounding box
 	void drawPrediction(int classId, float conf, int left, int top, int right, int bottom, cv::Mat& frame);
 	BoundingBox getBestBoundingBox();

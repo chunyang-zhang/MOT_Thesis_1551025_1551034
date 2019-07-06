@@ -7,13 +7,14 @@ FeatureDetectTrack::FeatureDetectTrack()
 	detector =	GFTTDetector::create(Config::maxFeatureTrack,0.001,10);
 	//detector = SURF::create(300);
 	//havent init brief and brute force yet
-	//xfeatures2d::BriefDescriptorExtractor
+	descriptor = xfeatures2d::BriefDescriptorExtractor::create();
 	//descriptor = DAISY::create();
-	descriptor = DAISY::create();
+	//descriptor = DAISY::create();
+
 	//init a matcher should test using KNN?
-	//matcher = BFMatcher::create();
+	matcher = BFMatcher::create();
 	//flann based created
-	matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
+	//matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
 
 }
 
@@ -34,29 +35,30 @@ Mat FeatureDetectTrack::computeDescriptors(const cv::Mat& img, vector<cv::KeyPoi
 }
 
 vector<DMatch> FeatureDetectTrack::matchTwoImage(const cv::Mat& desc1, const cv::Mat& desc2)
-{
+{	
+	vector<DMatch> goodMatches;
+
 	//vector<DMatch> matches;
-	//matcher->match(desc1, desc2, matches);
+	matcher->match(desc1, desc2, goodMatches);
 	//return matches of 2 descriptos
 	//return matches;
 	
-	//vector<DMatch> goodMatches;
 
 	//matcher->match(desc1, desc2, goodMatches);
-	vector< vector<DMatch> > knn_matches;
-	matcher->knnMatch(desc1, desc2, knn_matches,2);
-	//-- Filter matches using the Lowe's ratio test
-	const float ratio_thresh = 0.7f;
-	std::vector<DMatch> good_matches;
-	for (size_t i = 0; i < knn_matches.size(); i++)
-	{
-		if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance)
-		{
-			good_matches.push_back(knn_matches[i][0]);
-		}
-	}
+	//vector< vector<DMatch> > knn_matches;
+	//matcher->knnMatch(desc1, desc2, knn_matches,2);
+	////-- Filter matches using the Lowe's ratio test
+	//const float ratio_thresh = 0.7f;
+	//std::vector<DMatch> good_matches;
+	//for (size_t i = 0; i < knn_matches.size(); i++)
+	//{
+	//	if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance)
+	//	{
+	//		good_matches.push_back(knn_matches[i][0]);
+	//	}
+	//}
 
-	return good_matches;
+	return goodMatches;
 }
 
 vector<cv::DMatch> FeatureDetectTrack::rejectStereoOutliers(vector<cv::KeyPoint>& keyPoints1, vector<cv::KeyPoint>& keyPoints2, vector<cv::DMatch>& matches, const Mat3x3& F)

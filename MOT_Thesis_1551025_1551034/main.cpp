@@ -1,6 +1,7 @@
 #include"Utils.h"
 #include"StereoCalibration.h"
 #include"DroneSlam.h"
+#include"OutputPose.h"
 using namespace cv;
 int main() {
 	//Mat img;
@@ -15,7 +16,15 @@ int main() {
 	//return 0;
 	clock_t start = clock();
 	DroneSlam* slam = new DroneSlam();
+	OutputPose outputPose;
 	slam->processFrame();
-	cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << '\n';
+
+	outputPose = slam->getOutputPose();
+	Point3D mse = slam->getMSE();
+	outputPose.setErrorPose(mse);
+	ofstream fout("output_error.txt");
+	outputPose.output(fout);
+	cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << endl;
+	delete slam;
 	waitKey(0);
 }

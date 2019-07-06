@@ -12,6 +12,7 @@
 #include"YOLOObjectDetection.h"
 #include"BoundingBoxHelper.h"
 #include"BoundingBox.h"
+#include"OutputPose.h"
 #pragma comment(lib,"ws2_32.lib") //Winsock Library
 
 class DroneSlam
@@ -59,8 +60,13 @@ private:
 
 	//gpsPose
 	Point3DVector GPSPose;
+	OutputPose outputPose;
 	//ErrorPose
 	Point3DVector errPose;
+	float xMSE = 0;
+	float yMSE = 0;
+	float zMSE = 0;
+
 	//Keypoint Conversion helper
 	KeyPointConversion keyPointConversion;
 	YOLOObjectDetection* objectDetection;
@@ -96,6 +102,8 @@ private:
 	// IMU reader
 	bool readIMU(float& roll, float& pitch, float& yaw, double& time);
 	bool readAllIMU();
+
+
 	
 
 	// compute rotation matrix from IMU
@@ -104,9 +112,14 @@ private:
 
 	//Find Feature Point inside the 2D bounding 
 	void findFeaturePoints(Point3DVector & pointsInside2DBox, cv::Rect boundingBox);
+	float getTotalProcessTime();
+	float getTotalDistance();
 public:
 	DroneSlam();
 	~DroneSlam();
 	//main call this to process
 	void processFrame();
+	Point3D getMSE();
+	//get Output Pose
+	OutputPose getOutputPose();
 };
