@@ -5,12 +5,18 @@ FeatureDetectTrack::FeatureDetectTrack()
 {
 	//Initialize GFTT detector
 	detector =	GFTTDetector::create(Config::maxFeatureTrack,0.001,10);
+	//detector = cv::FastFeatureDetector::create(10, true);
 	//detector = SURF::create(300);
 	//havent init brief and brute force yet
 	descriptor = xfeatures2d::BriefDescriptorExtractor::create();
-	//descriptor = DAISY::create();
+	//orb = ORB::create(Config::maxFeatureTrack);
+	//brisk = BRISK::create();
+	//akaze = AKAZE::create();
+	//detector = AgastFeatureDetector::create();
+	//detector = MSER::create();
 	//descriptor = DAISY::create();
 
+	//descriptor = LUCID::create();
 	//init a matcher should test using KNN?
 	matcher = BFMatcher::create();
 	//flann based created
@@ -21,7 +27,9 @@ FeatureDetectTrack::FeatureDetectTrack()
 vector<cv::KeyPoint> FeatureDetectTrack::detectKeyPoints(const cv::Mat& img, const cv::Mat& mask)
 {
 	vector<KeyPoint> keyPoints;
+	//detector->detect(img, keyPoints, mask);
 	detector->detect(img, keyPoints, mask);
+	KeyPointsFilter::retainBest(keyPoints, Config::maxFeatureTrack);
 	//detect keypoints
 	return keyPoints;
 }
@@ -29,6 +37,7 @@ vector<cv::KeyPoint> FeatureDetectTrack::detectKeyPoints(const cv::Mat& img, con
 Mat FeatureDetectTrack::computeDescriptors(const cv::Mat& img, vector<cv::KeyPoint>& keyPoints)
 {
 	Mat descriptors;
+	//descriptor->compute(img, keyPoints, descriptors);
 	descriptor->compute(img, keyPoints, descriptors);
 	//return descriptors of keypoints
 	return descriptors;

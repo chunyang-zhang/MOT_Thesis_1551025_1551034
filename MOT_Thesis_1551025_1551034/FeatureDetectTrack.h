@@ -10,8 +10,15 @@ private:
 	//cv smart pointer to deallocate memory
 	cv::Ptr<cv::Feature2D> detector;
 	//cv::Ptr<SURF> detector;
-	cv::Ptr<BriefDescriptorExtractor> descriptor;
 
+	cv::Ptr<BriefDescriptorExtractor> descriptor;
+	//cv::Ptr<cv::DAISY> descriptor;
+	//cv::Ptr<cv::AgastFeatureDetector> detector;
+	//cv::Ptr<cv::MSER> detector;
+	//cv::Ptr<cv::ORB> orb;
+	//cv::Ptr<cv::BRISK> brisk;
+	//cv::Ptr<cv::AKAZE> akaze;
+	//cv::Ptr<LUCID> descriptor;
 	//cv::Ptr<cv::Feature2D> descriptor;
 	cv::Ptr<cv::DescriptorMatcher> matcher;
 public:

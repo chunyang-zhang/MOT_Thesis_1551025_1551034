@@ -22,7 +22,7 @@ int main() {
 	outputPose = slam->getOutputPose();
 	Point3D mse = slam->getMSE();
 	outputPose.setErrorPose(mse);
-	ofstream fout("output_error.txt");
+	ofstream fout("output_error_gftt_lucid.txt");
 	outputPose.output(fout);
 	cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << endl;
 	delete slam;

@@ -869,10 +869,16 @@ void DroneSlam::processFrame()
 			keyCurrP = keyPointConversion.KeyPoint2Point2f(keyPoints2);
 			cornerSubPix(frame->subFrame, keyCurrP, Size(10, 10), Size(-1, -1), termcrit);
 			keyPoints2 = keyPointConversion.Point2f2KeyPoint(keyCurrP);
-
+			cout << "Channel of image: " << frame->mainFrame.channels() << endl;
 			// BRIEF description
-			Mat descriptor1 = detectAndTracker->computeDescriptors(frame->mainFrame, keyPoints1);
-			Mat descriptor2 = detectAndTracker->computeDescriptors(frame->subFrame, keyPoints2);
+			Mat frameColor;
+			Mat subFrameColor;
+			//convert to bgr for  lucid
+			cvtColor(frame->mainFrame, frameColor, COLOR_GRAY2BGR);
+			cvtColor(frame->subFrame, subFrameColor, COLOR_GRAY2BGR);
+
+			Mat descriptor1 = detectAndTracker->computeDescriptors(frameColor, keyPoints1);
+			Mat descriptor2 = detectAndTracker->computeDescriptors(subFrameColor, keyPoints2);
 
 			// Brute Force matcher
 			vector<DMatch> matches = detectAndTracker->matchTwoImage(descriptor1, descriptor2);
@@ -1205,11 +1211,11 @@ void DroneSlam::processFrame()
 					}
 
 				}
-				if (isReinstall)
-				{
-					swap(prevKeyP, currKeyP);
-					continue;
-				}
+				//if (isReinstall)
+				//{
+				//	swap(prevKeyP, currKeyP);
+				//	continue;
+				//}
 				//waitKey(0);
 
 				//! new camera pose
@@ -1295,6 +1301,7 @@ void DroneSlam::processFrame()
 					{
 						float quality;
 						Point3D featurePoint;
+						//Error some time occur here
 						featurePoint = calculateFeaturePos(cameraPos[localMap[k].firstFrameID], localMap[k].featureObservation.front(), cameraPos[frame->id], localMap[k].featureObservation.back(), quality, allR[localMap[k].firstFrameID]);
 						if (quality > Config::threshQualityFeature && !cvIsInf(quality))
 						{
