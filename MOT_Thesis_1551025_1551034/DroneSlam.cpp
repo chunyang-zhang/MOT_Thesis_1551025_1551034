@@ -874,11 +874,13 @@ void DroneSlam::processFrame()
 			Mat frameColor;
 			Mat subFrameColor;
 			//convert to bgr for  lucid
-			cvtColor(frame->mainFrame, frameColor, COLOR_GRAY2BGR);
-			cvtColor(frame->subFrame, subFrameColor, COLOR_GRAY2BGR);
+			//cvtColor(frame->mainFrame, frameColor, COLOR_GRAY2BGR);
+			//cvtColor(frame->subFrame, subFrameColor, COLOR_GRAY2BGR);
 
-			Mat descriptor1 = detectAndTracker->computeDescriptors(frameColor, keyPoints1);
-			Mat descriptor2 = detectAndTracker->computeDescriptors(subFrameColor, keyPoints2);
+			//Mat descriptor1 = detectAndTracker->computeDescriptors(frameColor, keyPoints1);
+			//Mat descriptor2 = detectAndTracker->computeDescriptors(subFrameColor, keyPoints2);
+			Mat descriptor1 = detectAndTracker->computeDescriptors(frame->mainFrame, keyPoints1);
+			Mat descriptor2 = detectAndTracker->computeDescriptors(frame->subFrame, keyPoints2);
 
 			// Brute Force matcher
 			vector<DMatch> matches = detectAndTracker->matchTwoImage(descriptor1, descriptor2);
@@ -1264,11 +1266,16 @@ void DroneSlam::processFrame()
 					// already have keyPoint for Primary img, detect keyPoint for Secondary img
 					//keyP1 = Point2f2KeyPoint(currKeyP);
 					keyP2 = detectAndTracker->detectKeyPoints(frame->subFrame, mask);
-
+					//Mat frameColor;
+					//Mat subFrameColor;
+					//convert to bgr for  lucid
+					//cvtColor(frame->mainFrame, frameColor, COLOR_GRAY2BGR);
+					//cvtColor(frame->subFrame, subFrameColor, COLOR_GRAY2BGR);
 					// compute BRIEF description
+					//Mat descriptor1 = detectAndTracker->computeDescriptors(frameColor, keyP1);
+					//Mat descriptor2 = detectAndTracker->computeDescriptors(subFrameColor, keyP2);
 					Mat descriptor1 = detectAndTracker->computeDescriptors(frame->mainFrame, keyP1);
 					Mat descriptor2 = detectAndTracker->computeDescriptors(frame->subFrame, keyP2);
-
 					// matcher
 					vector<DMatch> matches = detectAndTracker->matchTwoImage(descriptor1, descriptor2);
 
@@ -1367,6 +1374,14 @@ void DroneSlam::processFrame()
 	thread_Img_stream.join();
 	//IMU_thread.join();
 
+}
+
+void DroneSlam::setDetectDescriptorMethod(string detector, string descriptor)
+{
+	if (detectAndTracker)
+	{
+		detectAndTracker->setDetectDescriptorMethod(detector, descriptor);
+	}
 }
 
 void DroneSlam::drawGPSResult(Mat& result)

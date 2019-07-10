@@ -4,19 +4,21 @@ using namespace cv;
 FeatureDetectTrack::FeatureDetectTrack()
 {
 	//Initialize GFTT detector
-	detector =	GFTTDetector::create(Config::maxFeatureTrack,0.001,10);
+	//detector =	GFTTDetector::create(Config::maxFeatureTrack,0.001,10);
 	//detector = cv::FastFeatureDetector::create(10, true);
 	//detector = SURF::create(300);
 	//havent init brief and brute force yet
-	descriptor = xfeatures2d::BriefDescriptorExtractor::create();
+	//descriptor = xfeatures2d::BriefDescriptorExtractor::create();
 	//orb = ORB::create(Config::maxFeatureTrack);
 	//brisk = BRISK::create();
 	//akaze = AKAZE::create();
 	//detector = AgastFeatureDetector::create();
 	//detector = MSER::create();
 	//descriptor = DAISY::create();
-
+	//descriptor = FREAK::create();
+	//detector = StarDetector::create();
 	//descriptor = LUCID::create();
+	//descriptor = LATCH::create();
 	//init a matcher should test using KNN?
 	matcher = BFMatcher::create();
 	//flann based created
@@ -24,11 +26,66 @@ FeatureDetectTrack::FeatureDetectTrack()
 
 }
 
+void FeatureDetectTrack::setDetectDescriptorMethod(string detectM, string descriptM)
+{
+	this->descriptM = descriptM;
+	this->detectM = detectM;
+	if (detectM.compare("gftt") == 0)
+	{
+		detector = GFTTDetector::create(Config::maxFeatureTrack, 0.001, 10);
+	}
+	else if(detectM.compare("agast") ==0)
+	{
+		agastDetector = AgastFeatureDetector::create();
+	}
+	else if (detectM.compare("mser") == 0)
+	{
+		mserDetector = MSER::create();
+	}
+	else if (detectM.compare("star") == 0)
+	{
+		starDetector = StarDetector::create();
+	}
+
+	if (descriptM.compare("brief") ==0)
+	{
+		briefDescriptor = xfeatures2d::BriefDescriptorExtractor::create();
+	}
+	else if (descriptM.compare("daisy") == 0)
+	{
+		daisyDescriptor = DAISY::create();
+	}
+	else if (descriptM.compare("latch") == 0)
+	{
+		latchDescriptor = LATCH::create();
+	}
+	else if (descriptM.compare("freak") == 0)
+	{
+		freakDescriptor = FREAK::create();
+	}
+}
+
 vector<cv::KeyPoint> FeatureDetectTrack::detectKeyPoints(const cv::Mat& img, const cv::Mat& mask)
 {
 	vector<KeyPoint> keyPoints;
 	//detector->detect(img, keyPoints, mask);
-	detector->detect(img, keyPoints, mask);
+	if (detectM.compare("gftt") == 0)
+	{
+		detector->detect(img, keyPoints, mask);
+	}
+	else if (detectM.compare("agast") == 0)
+	{
+		agastDetector->detect(img, keyPoints, mask);
+	}
+	else if (detectM.compare("mser") == 0)
+	{
+		mserDetector->detect(img, keyPoints, mask);
+	}
+	else if (detectM.compare("star") == 0)
+	{
+		starDetector->detect(img, keyPoints, mask);
+	}
+
 	KeyPointsFilter::retainBest(keyPoints, Config::maxFeatureTrack);
 	//detect keypoints
 	return keyPoints;
@@ -38,7 +95,22 @@ Mat FeatureDetectTrack::computeDescriptors(const cv::Mat& img, vector<cv::KeyPoi
 {
 	Mat descriptors;
 	//descriptor->compute(img, keyPoints, descriptors);
-	descriptor->compute(img, keyPoints, descriptors);
+	if (descriptM.compare("brief") == 0)
+	{
+		briefDescriptor->compute(img, keyPoints, descriptors);
+	}
+	else if (descriptM.compare("daisy") == 0)
+	{
+		daisyDescriptor->compute(img, keyPoints, descriptors);
+	}
+	else if (descriptM.compare("latch") == 0)
+	{
+		latchDescriptor->compute(img, keyPoints, descriptors);
+	}
+	else if (descriptM.compare("freak") == 0)
+	{
+		freakDescriptor->compute(img, keyPoints, descriptors);
+	}
 	//return descriptors of keypoints
 	return descriptors;
 }

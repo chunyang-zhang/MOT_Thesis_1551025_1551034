@@ -14,17 +14,33 @@ int main() {
 	//	waitKey(1);
 	//}
 	//return 0;
-	clock_t start = clock();
-	DroneSlam* slam = new DroneSlam();
-	OutputPose outputPose;
-	slam->processFrame();
+	//vector<string> detector = { "star","gftt","agast","mser"};
+	vector<string> detector = {"gftt" };
 
-	outputPose = slam->getOutputPose();
-	Point3D mse = slam->getMSE();
-	outputPose.setErrorPose(mse);
-	ofstream fout("output_error_gftt_lucid.txt");
-	outputPose.output(fout);
-	cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << endl;
-	delete slam;
-	waitKey(0);
+	vector<string> descriptor = { "brief"};
+	string outputFile; 
+	for (size_t i = 0; i < detector.size();i++)
+	{
+		for (size_t j = 0; j < descriptor.size();j++)
+		{
+			outputFile = "output_error_";
+			outputFile += detector[i] + "_" + descriptor[j] + ".txt";
+			cout << "Method: "<< outputFile << endl;
+			clock_t start = clock();
+			DroneSlam* slam = new DroneSlam();
+			OutputPose outputPose;
+			slam->setDetectDescriptorMethod(detector[i], descriptor[j]);
+			slam->processFrame();
+
+			outputPose = slam->getOutputPose();
+
+			Point3D mse = slam->getMSE();
+			outputPose.setErrorPose(mse);
+			ofstream fout(outputFile);
+			outputPose.output(fout);
+			cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << endl;
+			delete slam;
+		}
+	}
+	//waitKey(0);
 }

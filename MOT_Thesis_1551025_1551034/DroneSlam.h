@@ -119,6 +119,7 @@ public:
 	~DroneSlam();
 	//main call this to process
 	void processFrame();
+	void setDetectDescriptorMethod(string detector, string descriptor);
 	Point3D getMSE();
 	//get Output Pose
 	OutputPose getOutputPose();
