@@ -83,6 +83,14 @@ private:
 	Point3D calculateFeaturePos(const Point3D& firstCameraPos, const Point3D& firstObsv, const Point3D& secondCameraPos, const Point3D& secondObsv, float& quality, Mat3x3& R);
 	//calculate Camera Pose based on preCameraPos, local map, numOfInliers
 	Point3D calculateCameraPose(FeatureStorageVector& localMap, Point3D& preCameraPos, int& numOfInliers);
+	
+	//Find position of object in 3D space
+	Point3D calculate3DObjectPos(const FeatureStorageVector& localMap, const Point3D& cameraPos, vector<int>& pInsideBoxIndex );
+	//remove outliers by IQR
+	void removeOutliersIQR(vector<int> & pInsideBoxIndex, vector<float>& distanceOfFeature, Point3DVector& p3DOfFeature);
+	
+	//sort point its distance
+	void sortPointByDistance(vector<int>& pInsideBoxIndex, vector<float>& distanceOfFeature, Point3DVector& p3DOfFeature, int low, int high);
 	//Using Ransac for CameraPos Filter
 	Point3D ransac2PCameraPose(const Mat3x3Vector& allA, const Point3DVector& allAxp, const Point3DVector& ObsVectors, const Point3DVector& p3DFeature, vector<int>& resultInliers);
 	//Find Inliers and Error 

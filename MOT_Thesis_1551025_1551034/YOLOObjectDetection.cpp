@@ -26,7 +26,7 @@ bool YOLOObjectDetection::objectDetect (Mat& output)
 	//string label = format("Inference time for a frame : %.2f ms", t);
 	//putText(output, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
 	//There is no object available in frame
-	drawPrediction(output);
+	//drawPrediction(output);
 	//imshow("image", output);
 	//waitKey(0);
 	if (indices.size()==0)
