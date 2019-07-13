@@ -13,6 +13,7 @@
 #include"BoundingBoxHelper.h"
 #include"BoundingBox.h"
 #include"OutputPose.h"
+#include"BoundingBox3D.h"
 #pragma comment(lib,"ws2_32.lib") //Winsock Library
 
 class DroneSlam
@@ -85,12 +86,23 @@ private:
 	Point3D calculateCameraPose(FeatureStorageVector& localMap, Point3D& preCameraPos, int& numOfInliers);
 	
 	//Find position of object in 3D space
-	Point3D calculate3DObjectPos(const FeatureStorageVector& localMap, const Point3D& cameraPos, vector<int>& pInsideBoxIndex );
+	Point3D calculate3DObjectPos(const FeatureStorageVector& localMap, const Point3D& cameraPos, vector<int>& pInsideBoxIndex,Point3DVector& points3DInsideBox);
 	//remove outliers by IQR
 	void removeOutliersIQR(vector<int> & pInsideBoxIndex, vector<float>& distanceOfFeature, Point3DVector& p3DOfFeature);
 	
 	//sort point its distance
 	void sortPointByDistance(vector<int>& pInsideBoxIndex, vector<float>& distanceOfFeature, Point3DVector& p3DOfFeature, int low, int high);
+
+	//get3D bounding box in WCS
+	void getBoundingBox3DWCS(const Point3DVector& p3DOfFeature, Point3DVector& bbox3D);
+	
+	//convert 3D WCS to 2D image
+	void convert3DBoxto2DBox(const Point3DVector& bbox3D, vector<cv::Point2f>& box2D, const Mat3x3& R,const int& imgWidth,const int&imgHeight);
+
+	//draw 2D bounding box on Image.
+	void draw2DBoundingBox(cv::Mat& image, vector<cv::Point2f>& box2D);
+	//compute pixel coordinate convert a point from 3D world to 2D pixel coordinates
+	bool computePixelCoordinates(const Point3D& pWorld,const Mat3x3& cameraToWorld, const float& canvasWidth, const float& canvasHeight, const int& imgWidth, const int& imgHeight, cv::Point2f &pPixel);
 	//Using Ransac for CameraPos Filter
 	Point3D ransac2PCameraPose(const Mat3x3Vector& allA, const Point3DVector& allAxp, const Point3DVector& ObsVectors, const Point3DVector& p3DFeature, vector<int>& resultInliers);
 	//Find Inliers and Error 

@@ -7,7 +7,7 @@ CameraIMUStreamer::CameraIMUStreamer() {
 	//cout << camParams.cm1 << endl;
 	initUndistortRectifyMap(camParams.cm1, camParams.d1, camParams.r1, camParams.p1, Size(CAMERA_1_HEIGHT, CAMERA_1_WIDTH), CV_32FC1, camParams.map1x, camParams.map1y);
 	initUndistortRectifyMap(camParams.cm2, camParams.d2, camParams.r2, camParams.p2, Size(CAMERA_2_HEIGHT, CAMERA_2_WIDTH), CV_32FC1, camParams.map2x, camParams.map2y);
-	frameCounter = 0;// should put it static?
+	frameCounter = 0;
 	imgStreamId = 0;
 	//init rpy at t0
 	rollT0 = 0;

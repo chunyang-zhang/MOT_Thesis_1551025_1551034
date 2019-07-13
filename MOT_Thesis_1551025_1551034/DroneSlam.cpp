@@ -141,7 +141,6 @@ void DroneSlam::updateLocalMapStereo(Point3DVector& point3D, vector<float>& allQ
 
 Point3D DroneSlam::calculateFeaturePos(const Point3D& firstCameraPos, const Point3D& firstObsv, const Point3D& secondCameraPos, const Point3D& secondObsv, float& quality, Mat3x3& R)
 {
-	//Havent understand yet
 	// calculate unrotated feature observation
 	Point3D firstU, secondU;
 	firstU = R * firstObsv;
@@ -286,13 +285,12 @@ Point3D DroneSlam::calculateCameraPose(FeatureStorageVector& localMap, Point3D& 
 	return currCameraPos;
 }
 
-Point3D DroneSlam::calculate3DObjectPos(const FeatureStorageVector& localMap, const Point3D& cameraPos, vector<int>& pInsideBoxIndex)
+Point3D DroneSlam::calculate3DObjectPos(const FeatureStorageVector& localMap, const Point3D& cameraPos, vector<int>& pInsideBoxIndex, Point3DVector& points3DInsideBox)
 {
 
 	//Vector Store the distance from feature pose - preCamera pose
 	vector <float> distanceOfFeature;
-
-	Point3DVector p3D_OfFeature;
+	points3DInsideBox.clear();
 	float distance;
 	for (int i = 0; i < pInsideBoxIndex.size(); i++)
 	{
@@ -306,7 +304,7 @@ Point3D DroneSlam::calculate3DObjectPos(const FeatureStorageVector& localMap, co
 			distanceOfFeature.push_back(distance);
 
 			// 3D point of feature
-			p3D_OfFeature.push_back(localMap[pInsideBoxIndex[i]].featurePoseStereo);
+			points3DInsideBox.push_back(localMap[pInsideBoxIndex[i]].featurePoseStereo);
 		}
 		else//Mono Pose
 		{
@@ -317,18 +315,18 @@ Point3D DroneSlam::calculate3DObjectPos(const FeatureStorageVector& localMap, co
 				distanceOfFeature.push_back(distance);
 
 				//! 3D point of feature
-				p3D_OfFeature.push_back(localMap[pInsideBoxIndex[i]].featurePoseMono);
+				points3DInsideBox.push_back(localMap[pInsideBoxIndex[i]].featurePoseMono);
 			}
 		}
 	}
 	//Using IQR to remove outliers of distance
-	removeOutliersIQR(pInsideBoxIndex, distanceOfFeature, p3D_OfFeature);
+	removeOutliersIQR(pInsideBoxIndex, distanceOfFeature, points3DInsideBox);
 	Point3D objectPosition = Point3D(0, 0, 0);
-	for (size_t i = 0;i < p3D_OfFeature.size();i++)
+	for (size_t i = 0;i < points3DInsideBox.size();i++)
 	{
-		objectPosition = objectPosition + p3D_OfFeature[i];
+		objectPosition = objectPosition + points3DInsideBox[i];
 	}
-	objectPosition /= p3D_OfFeature.size();
+	objectPosition /= points3DInsideBox.size();
 	return objectPosition;
 }
 
@@ -436,6 +434,120 @@ void DroneSlam::sortPointByDistance(vector<int>& pInsideBoxIndex, vector<float>&
 	{
 		sortPointByDistance(pInsideBoxIndex, distanceOfFeature, p3DOfFeature, i, high);
 	}
+}
+
+void DroneSlam::getBoundingBox3DWCS(const Point3DVector& p3DOfFeature, Point3DVector& bbox3D)
+{
+	bbox3D.clear();
+	float minX, maxX;
+	minX =maxX = p3DOfFeature[0].x();
+	float minY, maxY;
+	minY = maxY = p3DOfFeature[0].y();
+	float minZ, maxZ;
+	minZ = maxZ = p3DOfFeature[0].z();
+	float x, y, z;//point 3D
+	for (size_t i = 1;i < p3DOfFeature.size();i++)
+	{
+		x = p3DOfFeature[i].x();
+		y = p3DOfFeature[i].y();
+		z = p3DOfFeature[i].z();
+		if (x > maxX)
+		{
+			maxX = x;
+		}
+		if(x < minX)
+		{
+			minX = x;
+		}
+		if (y > maxY)
+		{
+			maxY = y;
+		}
+		if (y < minY)
+		{
+			minY = y;
+		}
+		if (z > maxZ)
+		{
+			maxZ = z;
+		}
+		if (z < minZ)
+		{
+			minZ = z;
+		}
+	}
+	//1
+	bbox3D.push_back(Point3D(minX, maxY, minZ));
+	//2
+	bbox3D.push_back(Point3D(minX, maxY, maxZ));
+	//3
+	bbox3D.push_back(Point3D(maxX, maxY, maxZ));
+	//4
+	bbox3D.push_back(Point3D(maxX, maxY, minZ));
+	//5
+	bbox3D.push_back(Point3D(minX, minY, minZ));
+	//6
+	bbox3D.push_back(Point3D(minX, minY, maxZ));
+	//7
+	bbox3D.push_back(Point3D(maxX, minY, maxZ));
+	//8
+	bbox3D.push_back(Point3D(maxX, minY, minZ));
+
+}
+
+void DroneSlam::convert3DBoxto2DBox(const Point3DVector& bbox3D, vector<cv::Point2f>& box2D, const Mat3x3& R,const int& imgWidth,const int& imgHeight)
+{
+	box2D.clear();
+	Point2f tmpPoint;
+	for (size_t i = 0;i < bbox3D.size();i++)
+	{
+		computePixelCoordinates(bbox3D[i],R,2,2,imgWidth,imgHeight,tmpPoint);
+		box2D.push_back(tmpPoint);
+	}
+}
+
+void DroneSlam::draw2DBoundingBox(Mat& image, vector<cv::Point2f>& box2D)
+{
+	Scalar color = (0, 255, 255);
+	int thickness = 2;
+	line(image, box2D[0], box2D[1], color, thickness);
+	line(image, box2D[0], box2D[3], color, thickness);
+	line(image, box2D[0], box2D[4], color, thickness);
+	line(image, box2D[1], box2D[2], color, thickness);
+	line(image, box2D[1], box2D[5], color, thickness);
+	line(image, box2D[2], box2D[3], color, thickness);
+	line(image, box2D[2], box2D[6], color, thickness);
+	line(image, box2D[3], box2D[7], color, thickness);
+	line(image, box2D[4], box2D[5], color, thickness);
+	line(image, box2D[4], box2D[7], color, thickness);
+	line(image, box2D[5], box2D[6], color, thickness);
+	line(image, box2D[6], box2D[7], color, thickness);
+
+}
+
+bool DroneSlam::computePixelCoordinates(const Point3D& pWorld, const Mat3x3& cameraToWorld, const float& canvasWidth, const float& canvasHeight, const int& imgWidth, const int& imgHeight, Point2f& pPixel)
+{
+	//compute the inverse of cameraToWorld
+	Point3D pCamera;
+	Mat3x3 worldToCamera = cameraToWorld.inverse();
+	pCamera = worldToCamera * pWorld;
+	//Coordinates of the point on the canva
+	Point2f pScreen;
+	pScreen.x = pCamera.x() / -pCamera.z();
+	pScreen.y = pCamera.y() / -pCamera.z();
+
+	//check with the canvas width and height, if the x or y coordinate absolute value is
+	//greater than the canvas size, the point is not visible.
+	if (abs(pScreen.x) > canvasWidth || abs(pScreen.y) > canvasHeight)
+		return false;
+	//Normalized coordinate will in range [0,1]
+	Point2f pNDC;
+	pNDC.x = (pScreen.x + canvasWidth / 2) / canvasWidth;
+	pNDC.y = (pScreen.y + canvasHeight / 2) / canvasHeight;
+	//Convert to pixel coordiante
+	pPixel.x = floor(pNDC.x * imgWidth);
+	pPixel.y = floor((1 - pNDC.y) * imgHeight);
+	return true;
 }
 
 Point3D DroneSlam::ransac2PCameraPose(const Mat3x3Vector& allA, const Point3DVector& allAxp, const Point3DVector& ObsVectors, const Point3DVector& p3DFeature, vector<int>& resultInliers)
@@ -918,7 +1030,6 @@ void DroneSlam::processFrame()
 	Rect processBounding;
 	BoundingBoxHelper boxHelper;
 	BoundingBox croppedBoxResult;
-	Point3DVector pointsInside2DBox;
 	Rect originalBoundingBox;
 	Mat detectFrame;
 	bool checkDetect = false;
@@ -929,8 +1040,11 @@ void DroneSlam::processFrame()
 	int countLost = 0;
 	vector<int> pInsideBoxIndex;
 	vector<float>featureDistances;
+	//Object Pos
 	Point3D objectPos;
-
+	Point3DVector bbox3D;
+	Point3DVector points3DInsideBox;
+	vector<Point2f> pointsImage3DBox;
 	//Output value 
 	//Time, Number of Pic, Distance, Velocity, MSEx, MSEy,MSEz
 	float time = 0;
@@ -1060,9 +1174,9 @@ void DroneSlam::processFrame()
 			Point3DVector point3Dstereo;
 			point3Dstereo = triangulateStereo->myTriangulatePoints(keyPoints1, keyPoints2, stereoMatches, all_quality);
 			
-			//Show 3D points
-			//int size_of_stereo = point3Dstereo.size();
-			//cout << "Size of Stereo Points: " << size_of_stereo << endl;
+			//Show 3D points max min
+			int size_of_stereo = point3Dstereo.size();
+			cout << "Size of Stereo Points: " << size_of_stereo << endl;
 			//Mat outputZ = frame->mainFrame;
 			//vector <KeyPoint> tmpKeyP;
 
@@ -1082,7 +1196,7 @@ void DroneSlam::processFrame()
 			//}
 			//imshow("Z", outputZ);
 			//waitKey(0);
-			
+			//
 
 
 			// add all points detect camera primary to local map
@@ -1182,10 +1296,17 @@ void DroneSlam::processFrame()
 					}
 				}
 			}
+			//Calculate object Pos
 			if (pInsideBoxIndex.size() != 0)
 			{
-				objectPos = calculate3DObjectPos(localMap, cameraPos.back(), pInsideBoxIndex);
+				objectPos = calculate3DObjectPos(localMap, cameraPos.back(), pInsideBoxIndex, points3DInsideBox);
+				
 			}
+			//get the box 3D from points 3D
+			getBoundingBox3DWCS(points3DInsideBox, bbox3D);
+			//convert from 3D WCS to 2D Image
+			convert3DBoxto2DBox(bbox3D, pointsImage3DBox, currR, image.cols, image.rows);
+			//pointsImage3DBox = 
 			//bbox = Rect2d(tmpRect.x,tmpRect.y,tmpRect.width,tmpRect.height);
 			//tracker->init(image, bbox);
 			for (size_t i = 0;i < pInsideBoxIndex.size();i++)
@@ -1193,6 +1314,7 @@ void DroneSlam::processFrame()
 				circle(image, currKeyP[pInsideBoxIndex[i]], 5, Scalar(255, 0, 0), 2, 4);
 
 			}
+			draw2DBoundingBox(image, pointsImage3DBox);
 			cout << "3D object Pos: " << objectPos << endl;
 			objectDetection->drawPrediction(currBoundingBox.getClassId(), currBoundingBox.getConfidence(), left, top, right, bottom, image);
 
@@ -1386,15 +1508,22 @@ void DroneSlam::processFrame()
 						}
 					}
 				}
+				//Compute 3D object Pos
 				if (pInsideBoxIndex.size() != 0)
 				{
-					objectPos= calculate3DObjectPos(localMap, cameraPos.back(), pInsideBoxIndex);
+					objectPos= calculate3DObjectPos(localMap, cameraPos.back(), pInsideBoxIndex,points3DInsideBox);
 				}
+				//get 3D box from points 3D
+				getBoundingBox3DWCS(points3DInsideBox, bbox3D);
+				//convert from 3D WCS to 2D Image
+				convert3DBoxto2DBox(bbox3D, pointsImage3DBox, currR, image.cols, image.rows);
 				for (size_t i = 0;i < pInsideBoxIndex.size();i++)
 				{
 					circle(image, currKeyP[pInsideBoxIndex[i]], 5, Scalar(255, 0, 0), 2, 4);
 
 				}
+				draw2DBoundingBox(image, pointsImage3DBox);
+
 				cout << "3D object Pos: " << objectPos << endl;
 				objectDetection->drawPrediction(currBoundingBox.getClassId(), currBoundingBox.getConfidence(), left, top, right, bottom, image);
 
@@ -1519,10 +1648,11 @@ void DroneSlam::processFrame()
 					////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 					// calculate features pose from stereo
+
 					Point3DVector point3Dstereo;
 					vector <float> all_quality;
 					point3Dstereo = triangulateStereo->myTriangulatePoints(keyP1, keyP2, stereoMatches, all_quality);
-
+					
 					//Move to world coordinate and update map
 					updateLocalMapStereo(point3Dstereo, all_quality, stereoMatches, currR, cameraPos.back(), map);
 
