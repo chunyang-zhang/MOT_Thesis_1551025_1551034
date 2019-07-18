@@ -1051,7 +1051,7 @@ void DroneSlam::processFrame()
 	int numPics = stream->getNumFrames();
 	float distance;
 	float velocity;
-
+	float avgFeatureTime = 0;
 
 
 	time = getTotalProcessTime();
@@ -1061,6 +1061,7 @@ void DroneSlam::processFrame()
 	cout << "Distance: " << distance << endl;
 	cout << "Velocity: " << velocity << endl;
 	cout << "Num of Pics: " << numPics << endl;
+
 	outputPose.setTime(time);
 	outputPose.setDistance(distance);
 	outputPose.setNumPics(numPics);
@@ -1079,6 +1080,8 @@ void DroneSlam::processFrame()
 			if (stream == NULL || !stream->read(frame))
 			{
 				thread_Img_stream.join();
+				avgFeatureTime /= (double)CLOCKS_PER_SEC;
+				outputPose.setAvgFeatureTime(avgFeatureTime);
 				return;
 			}
 
@@ -1127,6 +1130,7 @@ void DroneSlam::processFrame()
 			Mat mask = Mat::zeros(frame->mainFrame.size(), CV_8UC1);  // type of mask is CV_8U
 			Mat roi(mask, cv::Rect(50, 50, 1142, 275));
 			roi = Scalar(255);
+			clock_t start = clock();
 
 			//! Shi-Tomasi conners for stereo corresponding  Ok
 			vector<KeyPoint> keyPoints1 = detectAndTracker->detectKeyPoints(frame->mainFrame, mask);
@@ -1155,7 +1159,7 @@ void DroneSlam::processFrame()
 
 			// Brute Force matcher
 			vector<DMatch> matches = detectAndTracker->matchTwoImage(descriptor1, descriptor2);
-
+			avgFeatureTime += clock() - start;
 
 			// reject outlier by epipolar constraints
 			vector<DMatch> stereoMatches;
@@ -1210,113 +1214,113 @@ void DroneSlam::processFrame()
 			//first detected for full frame
 			Mat image = frame->mainFrame;
 			cvtColor(image, image, CV_GRAY2RGB);
-			int idxRatio = 0;
-			float tmpRatio = ratio;
-			Rect bRect = currBoundingBox.getRegion();
-			bool checkValid = true;
-			if (frame->id == 0)
-			{
-				objectDetection->objectDetect(image);
-				currBoundingBox = objectDetection->getBestBoundingBox();
-				firstDetectedId = currBoundingBox.getClassId();
-				originalBoundingBox = currBoundingBox.getRegion();
-				left = originalBoundingBox.x;
-				top = originalBoundingBox.y;
-				right = originalBoundingBox.x + originalBoundingBox.width;
-				bottom = originalBoundingBox.y + originalBoundingBox.height;
-			}
-			//update if got reinstall still use the current surrounding bounding box
-			else {
-				while (!checkDetect)
-				{
-					if (idxRatio > 5) {
-						break;
-					}
-					cout << "Change Box Size 1 Time" << endl;
-					tmpRatio += 0.1 * idxRatio;
-					//get small surrounding frame
-					processBounding = boxHelper.getNewBoundingBox(bRect, tmpRatio, image.rows, image.cols);
-					//Surrounding Object For Detection
-					detectFrame = image(processBounding);
-					//Tracking
-					//bool ok = tracker->update(image, bbox);
-					//Detect
-					checkDetect = objectDetection->objectDetect(detectFrame);
-					if (checkDetect)
-					{
-						//get box with the same class Id with the original and also best IoU with original boundingbox
-						checkDetect = objectDetection->getRelatedBoundingBox(firstDetectedId, bRect, processBounding, croppedBoxResult);					
-					}
-					idxRatio += 5;
-				}
-				//keep the same bounding box if cant not find any.
-				if (checkDetect)
-				{
-					cout << "Successfully Detect a Object" << endl;
-					objectDetection->setIoUThreshold(1 / pow(ratioThreshold, countLost));
-					//Convert to original size
-					//width height the same
-					originalBoundingBox = boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y);
-					currBoundingBox.setRegion(originalBoundingBox);
-					countLost = 0;
-					left = originalBoundingBox.x;
-					top = originalBoundingBox.y;
-					right = originalBoundingBox.x + originalBoundingBox.width;
-					bottom = originalBoundingBox.y + originalBoundingBox.height;
-				}
-				else
-				{
-					cout << "Fail to detect a object" << endl;
-					//reduce iou for next tracking
-					objectDetection->setIoUThreshold(ratioThreshold);
-					Rect prevBBox = currBoundingBox.getRegion();
-					left = prevBBox.x;
-					top = prevBBox.y;
-					right = prevBBox.x + prevBBox.width;
-					bottom = prevBBox.y + prevBBox.height;
-					countLost++;
-					//If the third time it lost => lost the object
-				}
-			}
-			if (countLost == 3)
-			{
-				cout << "Lost the object" << endl;
-				thread_Img_stream.join();
-				return;
-			}
-			for (int k = 0; k < currKeyP.size(); k++)
-			{
-				Point2f point = currKeyP[k];
-				if (localMap[k].isStereoPose)
-				{
-					circle(image, currKeyP[k], 3, Scalar(0, 255, 0), -1, 8);
-					if (point.x > left && point.x<right && point.y>top && point.y < bottom)
-					{
-						pInsideBoxIndex.push_back(k);
-					}
-				}
-			}
-			//Calculate object Pos
-			if (pInsideBoxIndex.size() != 0)
-			{
-				objectPos = calculate3DObjectPos(localMap, cameraPos.back(), pInsideBoxIndex, points3DInsideBox);
-				
-			}
-			//get the box 3D from points 3D
-			getBoundingBox3DWCS(points3DInsideBox, bbox3D);
-			//convert from 3D WCS to 2D Image
-			convert3DBoxto2DBox(bbox3D, pointsImage3DBox, currR, image.cols, image.rows);
-			//pointsImage3DBox = 
-			//bbox = Rect2d(tmpRect.x,tmpRect.y,tmpRect.width,tmpRect.height);
-			//tracker->init(image, bbox);
-			for (size_t i = 0;i < pInsideBoxIndex.size();i++)
-			{
-				circle(image, currKeyP[pInsideBoxIndex[i]], 5, Scalar(255, 0, 0), 2, 4);
+			//int idxRatio = 0;
+			//float tmpRatio = ratio;
+			//Rect bRect = currBoundingBox.getRegion();
+			//bool checkValid = true;
+			//if (frame->id == 0)
+			//{
+			//	objectDetection->objectDetect(image);
+			//	currBoundingBox = objectDetection->getBestBoundingBox();
+			//	firstDetectedId = currBoundingBox.getClassId();
+			//	originalBoundingBox = currBoundingBox.getRegion();
+			//	left = originalBoundingBox.x;
+			//	top = originalBoundingBox.y;
+			//	right = originalBoundingBox.x + originalBoundingBox.width;
+			//	bottom = originalBoundingBox.y + originalBoundingBox.height;
+			//}
+			////update if got reinstall still use the current surrounding bounding box
+			//else {
+			//	while (!checkDetect)
+			//	{
+			//		if (idxRatio > 5) {
+			//			break;
+			//		}
+			//		cout << "Change Box Size 1 Time" << endl;
+			//		tmpRatio += 0.1 * idxRatio;
+			//		//get small surrounding frame
+			//		processBounding = boxHelper.getNewBoundingBox(bRect, tmpRatio, image.rows, image.cols);
+			//		//Surrounding Object For Detection
+			//		detectFrame = image(processBounding);
+			//		//Tracking
+			//		//bool ok = tracker->update(image, bbox);
+			//		//Detect
+			//		checkDetect = objectDetection->objectDetect(detectFrame);
+			//		if (checkDetect)
+			//		{
+			//			//get box with the same class Id with the original and also best IoU with original boundingbox
+			//			checkDetect = objectDetection->getRelatedBoundingBox(firstDetectedId, bRect, processBounding, croppedBoxResult);					
+			//		}
+			//		idxRatio += 5;
+			//	}
+			//	//keep the same bounding box if cant not find any.
+			//	if (checkDetect)
+			//	{
+			//		cout << "Successfully Detect a Object" << endl;
+			//		objectDetection->setIoUThreshold(1 / pow(ratioThreshold, countLost));
+			//		//Convert to original size
+			//		//width height the same
+			//		originalBoundingBox = boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y);
+			//		currBoundingBox.setRegion(originalBoundingBox);
+			//		countLost = 0;
+			//		left = originalBoundingBox.x;
+			//		top = originalBoundingBox.y;
+			//		right = originalBoundingBox.x + originalBoundingBox.width;
+			//		bottom = originalBoundingBox.y + originalBoundingBox.height;
+			//	}
+			//	else
+			//	{
+			//		cout << "Fail to detect a object" << endl;
+			//		//reduce iou for next tracking
+			//		objectDetection->setIoUThreshold(ratioThreshold);
+			//		Rect prevBBox = currBoundingBox.getRegion();
+			//		left = prevBBox.x;
+			//		top = prevBBox.y;
+			//		right = prevBBox.x + prevBBox.width;
+			//		bottom = prevBBox.y + prevBBox.height;
+			//		countLost++;
+			//		//If the third time it lost => lost the object
+			//	}
+			//}
+			//if (countLost == 3)
+			//{
+			//	cout << "Lost the object" << endl;
+			//	thread_Img_stream.join();
+			//	return;
+			//}
+			//for (int k = 0; k < currKeyP.size(); k++)
+			//{
+			//	Point2f point = currKeyP[k];
+			//	if (localMap[k].isStereoPose)
+			//	{
+			//		circle(image, currKeyP[k], 3, Scalar(0, 255, 0), -1, 8);
+			//		if (point.x > left && point.x<right && point.y>top && point.y < bottom)
+			//		{
+			//			pInsideBoxIndex.push_back(k);
+			//		}
+			//	}
+			//}
+			////Calculate object Pos
+			//if (pInsideBoxIndex.size() != 0)
+			//{
+			//	objectPos = calculate3DObjectPos(localMap, cameraPos.back(), pInsideBoxIndex, points3DInsideBox);
+			//	
+			//}
+			////get the box 3D from points 3D
+			//getBoundingBox3DWCS(points3DInsideBox, bbox3D);
+			////convert from 3D WCS to 2D Image
+			//convert3DBoxto2DBox(bbox3D, pointsImage3DBox, currR, image.cols, image.rows);
+			////pointsImage3DBox = 
+			////bbox = Rect2d(tmpRect.x,tmpRect.y,tmpRect.width,tmpRect.height);
+			////tracker->init(image, bbox);
+			//for (size_t i = 0;i < pInsideBoxIndex.size();i++)
+			//{
+			//	circle(image, currKeyP[pInsideBoxIndex[i]], 5, Scalar(255, 0, 0), 2, 4);
 
-			}
-			draw2DBoundingBox(image, pointsImage3DBox);
-			cout << "3D object Pos: " << objectPos << endl;
-			objectDetection->drawPrediction(currBoundingBox.getClassId(), currBoundingBox.getConfidence(), left, top, right, bottom, image);
+			//}
+			//draw2DBoundingBox(image, pointsImage3DBox);
+			//cout << "3D object Pos: " << objectPos << endl;
+			//objectDetection->drawPrediction(currBoundingBox.getClassId(), currBoundingBox.getConfidence(), left, top, right, bottom, image);
 
 			string RPYtext = "(" + to_string(roll) + ", " + to_string(pitch) + ", " + to_string(yaw) + ")";
 			putText(image, RPYtext, Point(50, 50), 1, 2, Scalar(100, 255, 0), 2, 2);
@@ -1347,75 +1351,75 @@ void DroneSlam::processFrame()
 				Mat image = frame->mainFrame;
 				//Detection with only the surrounding bounding box regions.
 				cvtColor(image, image, CV_GRAY2RGB);
-				Rect bRect = currBoundingBox.getRegion();
-				////If the output is none
-				////Increase the ratio of processing bounding box -> 1.2 1.4
-				int idxRatio = 0;
-				float tmpRatio = ratio;
-				while (!checkDetect)
-				{
+				//Rect bRect = currBoundingBox.getRegion();
+				//////If the output is none
+				//////Increase the ratio of processing bounding box -> 1.2 1.4
+				//int idxRatio = 0;
+				//float tmpRatio = ratio;
+				//while (!checkDetect)
+				//{
 
-					if (idxRatio > 5) {
-						break;
-					}
-					cout << "Change Box Size 1 Time" << endl;
-					tmpRatio += 0.1*idxRatio;
-					//get small surrounding frame
-					processBounding = boxHelper.getNewBoundingBox(bRect, tmpRatio, image.rows, image.cols);
-					//Surrounding Object For Detection
-					detectFrame = image(processBounding).clone();
-					//Tracking
-					//bool ok = tracker->update(image, bbox);
-					//Detect
-					checkDetect = objectDetection->objectDetect(detectFrame);
-					if (checkDetect)
-					{
-						//get bounding box with the same class ID and bounding 
-						checkDetect = objectDetection->getRelatedBoundingBox(firstDetectedId, bRect, processBounding, croppedBoxResult);
-					}
-					idxRatio+=5;
-				}
-				//Successfully detect a object
-				if (checkDetect)
-				{
-					cout << "Successfully Detect a Object" << endl;
-					objectDetection->setIoUThreshold(1.0f/pow(ratioThreshold, countLost));
+				//	if (idxRatio > 5) {
+				//		break;
+				//	}
+				//	cout << "Change Box Size 1 Time" << endl;
+				//	tmpRatio += 0.1*idxRatio;
+				//	//get small surrounding frame
+				//	processBounding = boxHelper.getNewBoundingBox(bRect, tmpRatio, image.rows, image.cols);
+				//	//Surrounding Object For Detection
+				//	detectFrame = image(processBounding).clone();
+				//	//Tracking
+				//	//bool ok = tracker->update(image, bbox);
+				//	//Detect
+				//	checkDetect = objectDetection->objectDetect(detectFrame);
+				//	if (checkDetect)
+				//	{
+				//		//get bounding box with the same class ID and bounding 
+				//		checkDetect = objectDetection->getRelatedBoundingBox(firstDetectedId, bRect, processBounding, croppedBoxResult);
+				//	}
+				//	idxRatio+=5;
+				//}
+				////Successfully detect a object
+				//if (checkDetect)
+				//{
+				//	cout << "Successfully Detect a Object" << endl;
+				//	objectDetection->setIoUThreshold(1.0f/pow(ratioThreshold, countLost));
 
-					//Get bounding box
-					//Convert to original size
-					originalBoundingBox = boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y);
-					//width height the same
-					//New bounding box
-					//Set new bounding to currboundingBox(tracking)
-					//currBoundingBox.setRegion(Rect(bbox));
-					//Detection
-					currBoundingBox.setRegion(originalBoundingBox);
-					left = originalBoundingBox.x;
-					top = originalBoundingBox.y;
-					right = originalBoundingBox.x + originalBoundingBox.width;
-					bottom = originalBoundingBox.y + originalBoundingBox.height;
-					countLost = 0;
-				}
-				else
-				{		
-					cout << "Fail to detect a object" << endl;
-					//reduce iou for next tracking
-					objectDetection->setIoUThreshold(ratioThreshold);
-					Rect prevBBox = currBoundingBox.getRegion();
-					left = prevBBox.x;
-					top = prevBBox.y;
-					right = prevBBox.x + prevBBox.width;
-					bottom = prevBBox.y + prevBBox.height;
-					countLost++;
-				}
-				if (countLost == 3)
-				{
-					cout << "Lost the object" << endl;
-					break;
-				}
-				int countInside = 0;
-				float dx = 0;
-				float dy = 0;
+				//	//Get bounding box
+				//	//Convert to original size
+				//	originalBoundingBox = boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y);
+				//	//width height the same
+				//	//New bounding box
+				//	//Set new bounding to currboundingBox(tracking)
+				//	//currBoundingBox.setRegion(Rect(bbox));
+				//	//Detection
+				//	currBoundingBox.setRegion(originalBoundingBox);
+				//	left = originalBoundingBox.x;
+				//	top = originalBoundingBox.y;
+				//	right = originalBoundingBox.x + originalBoundingBox.width;
+				//	bottom = originalBoundingBox.y + originalBoundingBox.height;
+				//	countLost = 0;
+				//}
+				//else
+				//{		
+				//	cout << "Fail to detect a object" << endl;
+				//	//reduce iou for next tracking
+				//	objectDetection->setIoUThreshold(ratioThreshold);
+				//	Rect prevBBox = currBoundingBox.getRegion();
+				//	left = prevBBox.x;
+				//	top = prevBBox.y;
+				//	right = prevBBox.x + prevBBox.width;
+				//	bottom = prevBBox.y + prevBBox.height;
+				//	countLost++;
+				//}
+				//if (countLost == 3)
+				//{
+				//	cout << "Lost the object" << endl;
+				//	break;
+				//}
+				//int countInside = 0;
+				//float dx = 0;
+				//float dy = 0;
 				//Cant detect a object using good features to track
 				Point2f point;
 				for (int k = 0; k < currKeyP.size(); k++)
@@ -1424,7 +1428,7 @@ void DroneSlam::processFrame()
 						continue;
 					//Green Color
 					point = currKeyP[k];
-					if (localMap[k].isStereoPose || localMap[k].isMonoPose)
+					/*if (localMap[k].isStereoPose || localMap[k].isMonoPose)
 					{
 						if (checkDetect)
 						{
@@ -1434,7 +1438,7 @@ void DroneSlam::processFrame()
 
 							}
 						}
-					}
+					}*/
 					if (localMap[k].isStereoPose)
 					{
 						circle(image, currKeyP[k], 3, Scalar(0, 255, 0), -1, 8);
@@ -1460,73 +1464,73 @@ void DroneSlam::processFrame()
 						circle(image, currKeyP[k], 5, Scalar(255, 255, 255), 2, 4);
 						
 					}
-					if (checkDetect)
-					{
-						continue;
-					}
-					//Prev key Point
-					point = prevKeyP[k];
-					//point inside prebox;
-					if (localMap[k].isStereoPose || localMap[k].isMonoPose)
-					{
-						if (point.x > left && point.x<right && point.y>top && point.y < bottom)
-						{
-							countInside++;
-							dx += currKeyP[k].x - point.x;
-							dy += currKeyP[k].y - point.y;
-						}
-					}
+					//if (checkDetect)
+					//{
+					//	continue;
+					//}
+					////Prev key Point
+					//point = prevKeyP[k];
+					////point inside prebox;
+					//if (localMap[k].isStereoPose || localMap[k].isMonoPose)
+					//{
+					//	if (point.x > left && point.x<right && point.y>top && point.y < bottom)
+					//	{
+					//		countInside++;
+					//		dx += currKeyP[k].x - point.x;
+					//		dy += currKeyP[k].y - point.y;
+					//	}
+					//}
 					
 				}
-				if (!checkDetect)
-				{
-					dx /= countInside;
-					dy /= countInside;
-					int x = originalBoundingBox.x + dx;
-					int y = originalBoundingBox.y + dy;
+				//if (!checkDetect)
+				//{
+				//	dx /= countInside;
+				//	dy /= countInside;
+				//	int x = originalBoundingBox.x + dx;
+				//	int y = originalBoundingBox.y + dy;
 
-					originalBoundingBox = Rect(x, y, originalBoundingBox.width, originalBoundingBox.height);
-					currBoundingBox.setRegion(originalBoundingBox);
-					left = x;
-					top = y;
-					right = x + originalBoundingBox.width;
-					bottom = y + originalBoundingBox.height;
-					//Cant detect a object using good features to track
-					for (int k = 0; k < currKeyP.size(); k++)
-					{
-						if (!status[k])
-							continue;
-						point = currKeyP[k];
-						//White 
-						if (localMap[k].isStereoPose || localMap[k].isMonoPose)
-						{
-							if (point.x > left && point.x<right && point.y>top && point.y < bottom)
-							{
-								pInsideBoxIndex.push_back(k);
+				//	originalBoundingBox = Rect(x, y, originalBoundingBox.width, originalBoundingBox.height);
+				//	currBoundingBox.setRegion(originalBoundingBox);
+				//	left = x;
+				//	top = y;
+				//	right = x + originalBoundingBox.width;
+				//	bottom = y + originalBoundingBox.height;
+				//	//Cant detect a object using good features to track
+				//	for (int k = 0; k < currKeyP.size(); k++)
+				//	{
+				//		if (!status[k])
+				//			continue;
+				//		point = currKeyP[k];
+				//		//White 
+				//		if (localMap[k].isStereoPose || localMap[k].isMonoPose)
+				//		{
+				//			if (point.x > left && point.x<right && point.y>top && point.y < bottom)
+				//			{
+				//				pInsideBoxIndex.push_back(k);
 
-							}
-						}
-					}
-				}
+				//			}
+				//		}
+				//	}
+				//}
 				//Compute 3D object Pos
-				if (pInsideBoxIndex.size() != 0)
-				{
-					objectPos= calculate3DObjectPos(localMap, cameraPos.back(), pInsideBoxIndex,points3DInsideBox);
-				}
-				//get 3D box from points 3D
-				getBoundingBox3DWCS(points3DInsideBox, bbox3D);
-				//convert from 3D WCS to 2D Image
-				convert3DBoxto2DBox(bbox3D, pointsImage3DBox, currR, image.cols, image.rows);
-				for (size_t i = 0;i < pInsideBoxIndex.size();i++)
-				{
-					circle(image, currKeyP[pInsideBoxIndex[i]], 5, Scalar(255, 0, 0), 2, 4);
+				//if (pInsideBoxIndex.size() != 0)
+				//{
+				//	objectPos= calculate3DObjectPos(localMap, cameraPos.back(), pInsideBoxIndex,points3DInsideBox);
+				//}
+				////get 3D box from points 3D
+				//getBoundingBox3DWCS(points3DInsideBox, bbox3D);
+				////convert from 3D WCS to 2D Image
+				//convert3DBoxto2DBox(bbox3D, pointsImage3DBox, currR, image.cols, image.rows);
+				//for (size_t i = 0;i < pInsideBoxIndex.size();i++)
+				//{
+				//	circle(image, currKeyP[pInsideBoxIndex[i]], 5, Scalar(255, 0, 0), 2, 4);
 
-				}
-				draw2DBoundingBox(image, pointsImage3DBox);
+				//}
+				/*draw2DBoundingBox(image, pointsImage3DBox);
 
 				cout << "3D object Pos: " << objectPos << endl;
 				objectDetection->drawPrediction(currBoundingBox.getClassId(), currBoundingBox.getConfidence(), left, top, right, bottom, image);
-
+*/
 				string RPYtext = "(" + to_string(roll) + ", " + to_string(pitch) + ", " + to_string(yaw) + ")";
 				putText(image, RPYtext, Point(50, 50), 1, 2, Scalar(100, 255, 0), 2, 2);
 				imshow("Tracker", image);
@@ -1572,7 +1576,7 @@ void DroneSlam::processFrame()
 				{
 					count++;
 					curr_CameraPos = calculateCameraPose(localMap, cameraPos.back(), numInliers);
-					if (count > 20)
+					if (count > 30)
 					{
 						localMap.clear();
 						currKeyP.clear();
@@ -1626,6 +1630,7 @@ void DroneSlam::processFrame()
 							map.push_back(ik);
 						}
 					}
+					clock_t start = clock();
 					// already have keyPoint for Primary img, detect keyPoint for Secondary img
 					//keyP1 = Point2f2KeyPoint(currKeyP);
 					keyP2 = detectAndTracker->detectKeyPoints(frame->subFrame, mask);
@@ -1635,7 +1640,7 @@ void DroneSlam::processFrame()
 					Mat descriptor2 = detectAndTracker->computeDescriptors(frame->subFrame, keyP2);
 					// matcher
 					vector<DMatch> matches = detectAndTracker->matchTwoImage(descriptor1, descriptor2);
-
+					avgFeatureTime += clock() - start;
 					// reject outlier by epipolar constrains
 					vector<DMatch> stereoMatches;
 					stereoMatches = detectAndTracker->rejectStereoOutliers(keyP1, keyP2, matches, stream->getCamParams().F_f);

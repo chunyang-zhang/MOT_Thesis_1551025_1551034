@@ -30,6 +30,7 @@ void FeatureDetectTrack::setDetectDescriptorMethod(string detectM, string descri
 {
 	this->descriptM = descriptM;
 	this->detectM = detectM;
+	//Detector
 	if (detectM.compare("gftt") == 0)
 	{
 		detector = GFTTDetector::create(Config::maxFeatureTrack, 0.001, 10);
@@ -46,7 +47,19 @@ void FeatureDetectTrack::setDetectDescriptorMethod(string detectM, string descri
 	{
 		starDetector = StarDetector::create();
 	}
-
+	else if (detectM.compare("orb") == 0)
+	{
+		orb = ORB::create();
+	}
+	else if (detectM.compare("fast") == 0)
+	{
+		fastDetector = FastFeatureDetector::create();
+	}
+	else if (detectM.compare("brisk") == 0)
+	{
+		brisk = BRISK::create();
+	}
+	//Descriptor
 	if (descriptM.compare("brief") ==0)
 	{
 		briefDescriptor = xfeatures2d::BriefDescriptorExtractor::create();
@@ -85,7 +98,18 @@ vector<cv::KeyPoint> FeatureDetectTrack::detectKeyPoints(const cv::Mat& img, con
 	{
 		starDetector->detect(img, keyPoints, mask);
 	}
-
+	else if (detectM.compare("orb") == 0)
+	{
+		orb->detect(img, keyPoints, mask);
+	}
+	else if (detectM.compare("fast") == 0)
+	{
+		fastDetector->detect(img, keyPoints, mask);
+	}
+	else if (detectM.compare("brisk") == 0)
+	{
+		brisk->detect(img, keyPoints, mask);
+	}
 	KeyPointsFilter::retainBest(keyPoints, Config::maxFeatureTrack);
 	//detect keypoints
 	return keyPoints;
@@ -110,6 +134,14 @@ Mat FeatureDetectTrack::computeDescriptors(const cv::Mat& img, vector<cv::KeyPoi
 	else if (descriptM.compare("freak") == 0)
 	{
 		freakDescriptor->compute(img, keyPoints, descriptors);
+	}
+	else if (descriptM.compare("orb") == 0)
+	{
+		orb->compute(img, keyPoints, descriptors);
+	}
+	else if (descriptM.compare("brisk")==0)
+	{
+		brisk->compute(img, keyPoints, descriptors);
 	}
 	//return descriptors of keypoints
 	return descriptors;

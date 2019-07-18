@@ -1,2 +1,2 @@
-Time(s), Number Of Pics, Distance (m), Velocity(m/s), MSE x, MSE y, MSE z
-8.89015, 87, 35.0289, 3.94019, 0.0170405, 0.162642, 0.149686
+Time(s), Number Of Pics, Distance (m), Velocity(m/s), MSE x, MSE y, MSE z, FeatureTime (s)
+8.89015, 87, 35.0289, 3.94019, 0.0417268, 0.159028, 0.132438, 15.14

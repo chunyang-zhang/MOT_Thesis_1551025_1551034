@@ -18,6 +18,9 @@ private:
 	cv::Ptr<cv::Feature2D> descriptor;
 	cv::Ptr<FREAK> freakDescriptor;
 	cv::Ptr<cv::DescriptorMatcher> matcher;
+	cv::Ptr<cv::ORB> orb;
+	cv::Ptr<cv::FastFeatureDetector> fastDetector;
+	cv::Ptr<cv::BRISK> brisk;
 	string detectM;
 	string descriptM;
 public:

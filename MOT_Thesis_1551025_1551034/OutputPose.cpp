@@ -26,6 +26,11 @@ void OutputPose::setErrorPose(Point3D errP)
 	errPose = errP;
 }
 
+void OutputPose::setAvgFeatureTime(float avgFeatureTime)
+{
+	this->avgFeatureTime = avgFeatureTime;
+}
+
 float OutputPose::getTime()
 {
 	return time;
@@ -51,12 +56,17 @@ Point3D OutputPose::getErrorPose()
 	return errPose;
 }
 
+float OutputPose::getAvgFeatureTime()
+{
+	return avgFeatureTime;
+}
+
 void OutputPose::output(ofstream& fout)
 {
 	if (fout.is_open())
 	{
-		fout << "Time(s), Number Of Pics, Distance (m), Velocity(m/s), MSE x, MSE y, MSE z" << endl;
-		fout << time << ", " << numPics << ", " << distance << ", " << velocity << ", " << errPose[0] << ", " << errPose[1] << ", " << errPose[2] << endl;
+		fout << "Time(s), Number Of Pics, Distance (m), Velocity(m/s), MSE x, MSE y, MSE z, FeatureTime (s)" << endl;
+		fout << time << ", " << numPics << ", " << distance << ", " << velocity << ", " << errPose[0] << ", " << errPose[1] << ", " << errPose[2]  <<", "<<avgFeatureTime<<endl;
 		fout.close();
 	}
 }
