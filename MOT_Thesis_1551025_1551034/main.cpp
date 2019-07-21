@@ -17,8 +17,8 @@ int main() {
 	//vector<string> detector = { "brisk","orb","fast","star","gftt","agast"};
 
 	//vector<string> descriptor = { "brief","daisy","latch","freak"};
-	vector<string> detector = { "gftt"};
-	vector<string> descriptor = { "brief"};
+	vector<string> detector = { "agast"};
+	vector<string> descriptor = { "latch"};
 	//vector<string> detector = { "fast","gftt" };
 	//vector<string> descriptor = { "brief" };
 	string outputFile;

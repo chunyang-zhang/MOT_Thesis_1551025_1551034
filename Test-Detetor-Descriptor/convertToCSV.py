@@ -50,6 +50,22 @@ def write_to_csv(file_name,method_names,method_result):
             total_process_time.append(list_method_result[-1])
             spamwriter.writerow(row)
     return total_mse, total_process_time
+def write_onemethod_csv(file_name, folder_names, one_method_result):
+    if(len(one_method_result)!=0):
+        field_names =list(one_method_result[0].keys())
+        field_names.insert(0,"DATA")
+    with open(file_name, 'w',newline='') as csvfile:
+        #method result keys are field names
+        spamwriter = csv.writer(csvfile)
+        spamwriter.writerow(field_names)
+        for i in range(0,len(one_method_result)):
+            #first col is the file name
+            row = []
+            row.append(folder_names[i])
+            for value in one_method_result[i].values():
+                row.append(value)
+            spamwriter.writerow(row)
+
 def write_avg_result_to_csv(output_name,file_names,total_avg_matrix,process_time_result):
     avg_mse = []
     with open(output_name, 'w',newline='') as csvfile:
@@ -119,17 +135,22 @@ total_avg_matrix = np.full((len(file_names),3),1./len(path_folder_names),dtype =
 process_time_matrix = np.zeros(len(file_names),dtype = float)
 #a 1/n file names
 avg_process_time_matrix = np.full(len(file_names),1./len(path_folder_names),dtype = float)
+method_id = 6
+one_method_result = []
 for i in range(len(path_folder_names)):
     #file_names inside folder
     #path of file name
     path_file_names =  [os.path.join(path_folder_names[i],name) for name in file_names]
     method_results = read_from_folder(path_file_names)
+    one_method_result.append(method_results[method_id])
     #name of output file is name of the folder
     outputfile_name = ''.join((folder_names[i],".csv"))
     print(outputfile_name)
     total_mse,process_time = write_to_csv(outputfile_name,file_names,method_results)
     total_mse_matrix += np.array(total_mse)
     process_time_matrix += np.array(process_time)
+file_name = file_names[i].replace('.txt','.csv')
+write_onemethod_csv(file_name,folder_names,one_method_result)
 #print(total_avg_matrix)
 #print(total_mse_matrix)
 total_avg_result = total_mse_matrix*total_avg_matrix
