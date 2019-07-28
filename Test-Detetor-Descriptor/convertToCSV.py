@@ -76,8 +76,20 @@ def write_onemethod_csv(file_name, folder_names, one_method_result):
             avg_time += one_method_result[i]["Avg Feature Time (s)"]
             for value in one_method_result[i].values():
                 row.append(value)
-
+            
             spamwriter.writerow(row)
+        row = []
+        row.append("Avg Result")
+        row.append("")
+        row.append("")
+        row.append("")
+        row.append("")
+        row.append(avg_x/len(one_method_result))
+        row.append(avg_y/len(one_method_result))
+        row.append(avg_z/len(one_method_result))
+        row.append(avg_aed/len(one_method_result))
+        row.append(avg_time/len(one_method_result))
+        spamwriter.writerow(row)
 
 def write_avg_result_to_csv(output_name,file_names,total_avg_matrix,total_avg_aed,process_time_result):
     with open(output_name, 'w',newline='') as csvfile:
@@ -166,7 +178,7 @@ for i in range(len(path_folder_names)):
     total_mse_matrix += np.array(total_mse)
     process_time_matrix += np.array(process_time)
     total_aed_matrix += np.array(total_aed)
-file_name = file_names[i].replace('.txt','.csv')
+file_name = file_names[method_id].replace('.txt','.csv')
 write_onemethod_csv(file_name,folder_names,one_method_result)
 #print(total_avg_matrix)
 #print(total_mse_matrix)
