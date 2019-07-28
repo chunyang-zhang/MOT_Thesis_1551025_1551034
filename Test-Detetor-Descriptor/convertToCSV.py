@@ -43,7 +43,11 @@ def write_to_csv(file_name,method_names,method_result):
             #first col is the file name
             row = [method_names[i].replace(".txt","")]
             for value in method_result[i].values():
-                row.append(value)
+                if(type(value) == float):
+                    row.append("{0:.4f}".format(value))
+                else:
+                    row.append(value)
+
             #get mse value
             list_method_result = list(method_result[i].values())
             #get the 3xn error matrix 
@@ -75,7 +79,10 @@ def write_onemethod_csv(file_name, folder_names, one_method_result):
             avg_aed += one_method_result[i]["AED"]
             avg_time += one_method_result[i]["Avg Feature Time (s)"]
             for value in one_method_result[i].values():
-                row.append(value)
+                if(type(value) == float):
+                    row.append("{0:.4f}".format(value))
+                else:
+                    row.append(value)
             
             spamwriter.writerow(row)
         row = []
@@ -84,11 +91,11 @@ def write_onemethod_csv(file_name, folder_names, one_method_result):
         row.append("")
         row.append("")
         row.append("")
-        row.append(avg_x/len(one_method_result))
-        row.append(avg_y/len(one_method_result))
-        row.append(avg_z/len(one_method_result))
-        row.append(avg_aed/len(one_method_result))
-        row.append(avg_time/len(one_method_result))
+        row.append("{0:.4f}".format(avg_x/len(one_method_result)))
+        row.append("{0:.4f}".format(avg_y/len(one_method_result)))
+        row.append("{0:.4f}".format(avg_z/len(one_method_result)))
+        row.append("{0:.4f}".format(avg_aed/len(one_method_result)))
+        row.append("{0:.4f}".format(avg_time/len(one_method_result)))
         spamwriter.writerow(row)
 
 def write_avg_result_to_csv(output_name,file_names,total_avg_matrix,total_avg_aed,process_time_result):
@@ -101,9 +108,12 @@ def write_avg_result_to_csv(output_name,file_names,total_avg_matrix,total_avg_ae
         for i in range(len(total_avg_aed)):
             row = [file_names[i].replace(".txt","")]
             for value in total_avg_matrix[i]:
-                row.append(value)
-            row.append(total_avg_aed[i])
-            row.append(process_time_result[i])
+                if(type(value) == float):
+                    row.append("{0:.4f}".format(value))
+                else:
+                    row.append(value)
+            row.append("{0:.4f}".format(total_avg_aed[i]))
+            row.append("{0:.4f}".format(process_time_result[i]))
             spamwriter.writerow(row)
 
 def getDetectorDescriptor(file_names,aed_result,process_time_result,markers,colors):
