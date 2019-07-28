@@ -11,6 +11,7 @@ private:
 	float velocity;
 	Point3D errPose;
 	float avgFeatureTime;
+	float aed;
 public:
 	//Set value
 	void setTime(float t);
@@ -19,6 +20,7 @@ public:
 	void setVelocity(float v);
 	void setErrorPose(Point3D errP);
 	void setAvgFeatureTime(float avgFeatureTime);
+	void setAED(float aed);
 	//get Value
 	float getTime();
 	int getNumPics();

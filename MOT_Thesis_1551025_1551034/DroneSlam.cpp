@@ -1081,6 +1081,7 @@ void DroneSlam::processFrame()
 			{
 				thread_Img_stream.join();
 				avgFeatureTime /= (double)CLOCKS_PER_SEC;
+				avgFeatureTime /= numPics;
 				outputPose.setAvgFeatureTime(avgFeatureTime);
 				return;
 			}
@@ -1426,19 +1427,19 @@ void DroneSlam::processFrame()
 				{
 					if (!status[k])
 						continue;
-					//Green Color
-					point = currKeyP[k];
-					/*if (localMap[k].isStereoPose || localMap[k].isMonoPose)
-					{
-						if (checkDetect)
-						{
-							if (point.x > left && point.x<right && point.y>top && point.y < bottom)
-							{
-								pInsideBoxIndex.push_back(k);
+					////Green Color
+					//point = currKeyP[k];
+					//if (localMap[k].isStereoPose || localMap[k].isMonoPose)
+					//{
+					//	if (checkDetect)
+					//	{
+					//		if (point.x > left && point.x<right && point.y>top && point.y < bottom)
+					//		{
+					//			pInsideBoxIndex.push_back(k);
 
-							}
-						}
-					}*/
+					//		}
+					//	}
+					//}
 					if (localMap[k].isStereoPose)
 					{
 						circle(image, currKeyP[k], 3, Scalar(0, 255, 0), -1, 8);
@@ -1526,11 +1527,11 @@ void DroneSlam::processFrame()
 				//	circle(image, currKeyP[pInsideBoxIndex[i]], 5, Scalar(255, 0, 0), 2, 4);
 
 				//}
-				/*draw2DBoundingBox(image, pointsImage3DBox);
+				////draw2DBoundingBox(image, pointsImage3DBox);
 
-				cout << "3D object Pos: " << objectPos << endl;
-				objectDetection->drawPrediction(currBoundingBox.getClassId(), currBoundingBox.getConfidence(), left, top, right, bottom, image);
-*/
+				//cout << "3D object Pos: " << objectPos << endl;
+				//objectDetection->drawPrediction(currBoundingBox.getClassId(), currBoundingBox.getConfidence(), left, top, right, bottom, image);
+
 				string RPYtext = "(" + to_string(roll) + ", " + to_string(pitch) + ", " + to_string(yaw) + ")";
 				putText(image, RPYtext, Point(50, 50), 1, 2, Scalar(100, 255, 0), 2, 2);
 				imshow("Tracker", image);
@@ -1856,6 +1857,17 @@ Point3D DroneSlam::getMSE()
 	yMSE /= errPose.size();
 	zMSE /= errPose.size();
 	return Point3D(xMSE, yMSE, zMSE);
+}
+
+float DroneSlam::getAED()
+{
+	float result = 0;
+	for(size_t i = 0; i<errPose.size();i++)
+	{
+		result += errPose[i].norm();
+	}
+	result /= errPose.size(); 
+	return result;
 }
 
 

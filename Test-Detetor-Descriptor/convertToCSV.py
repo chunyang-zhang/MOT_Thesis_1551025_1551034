@@ -27,8 +27,9 @@ def load_from_file(file_name):
             method_dict[names[i]] =float(values[i])
     return method_dict 
 def write_to_csv(file_name,method_names,method_result):
-    total_mse = []
+    total_aed = []
     total_process_time = []
+    total_mse = []
     with open(file_name, 'w',newline='') as csvfile:
         #method result keys are field names
         if(len(method_result)!=0):
@@ -46,14 +47,20 @@ def write_to_csv(file_name,method_names,method_result):
             #get mse value
             list_method_result = list(method_result[i].values())
             #get the 3xn error matrix 
-            total_mse.append(list_method_result[-4:len(list_method_result)-1])
+            total_mse.append(list_method_result[-5:-2])
+            total_aed.append(list_method_result[-2])
             total_process_time.append(list_method_result[-1])
             spamwriter.writerow(row)
-    return total_mse, total_process_time
+    return total_mse, total_aed, total_process_time
 def write_onemethod_csv(file_name, folder_names, one_method_result):
     if(len(one_method_result)!=0):
         field_names =list(one_method_result[0].keys())
         field_names.insert(0,"DATA")
+    avg_aed = 0
+    avg_time = 0
+    avg_x = 0
+    avg_y = 0
+    avg_z = 0
     with open(file_name, 'w',newline='') as csvfile:
         #method result keys are field names
         spamwriter = csv.writer(csvfile)
@@ -62,30 +69,32 @@ def write_onemethod_csv(file_name, folder_names, one_method_result):
             #first col is the file name
             row = []
             row.append(folder_names[i])
+            avg_x += one_method_result[i]["MSE x"]
+            avg_y += one_method_result[i]["MSE y"]
+            avg_z += one_method_result[i]["MSE z"]
+            avg_aed += one_method_result[i]["AED"]
+            avg_time += one_method_result[i]["Avg Feature Time (s)"]
             for value in one_method_result[i].values():
                 row.append(value)
+
             spamwriter.writerow(row)
 
-def write_avg_result_to_csv(output_name,file_names,total_avg_matrix,process_time_result):
-    avg_mse = []
+def write_avg_result_to_csv(output_name,file_names,total_avg_matrix,total_avg_aed,process_time_result):
     with open(output_name, 'w',newline='') as csvfile:
         #method result keys are field names
-        field_names =["MSE x","MSE y","MSE z","Avg MSE","Avg Process Time (s)"]
+        field_names =["MSE x","MSE y","MSE z","AED","Avg Process Time (s)"]
         field_names.insert(0,"names")
         spamwriter = csv.writer(csvfile)
         spamwriter.writerow(field_names)
-        for i in range(len(total_avg_matrix)):
+        for i in range(len(total_avg_aed)):
             row = [file_names[i].replace(".txt","")]
-            mse = 0
             for value in total_avg_matrix[i]:
                 row.append(value)
-                mse +=value 
-            row.append(mse/3)
-            avg_mse.append(mse/3)
+            row.append(total_avg_aed[i])
             row.append(process_time_result[i])
             spamwriter.writerow(row)
-    return avg_mse
-def getDetectorDescriptor(file_names,total_avg_result,process_time_result,markers,colors):
+
+def getDetectorDescriptor(file_names,aed_result,process_time_result,markers,colors):
     featureDict = []
 
     detectors = []
@@ -104,7 +113,7 @@ def getDetectorDescriptor(file_names,total_avg_result,process_time_result,marker
             descriptors.append(desc)
         feature["detector"] =  dect
         feature["descriptor"]= desc
-        feature["mse"] = total_avg_result[i]
+        feature["aed"] = aed_result[i]
         feature["time"] = process_time_result[i]
         featureDict.append(feature)
 
@@ -129,12 +138,18 @@ if (len(path_folder_names)!=0):
     file_names = os.listdir(path_folder_names[0])
 #a nx3 matrix for mse
 total_mse_matrix = np.zeros((len(file_names),3),dtype = float)
-#a 1/n file names
-total_avg_matrix = np.full((len(file_names),3),1./len(path_folder_names),dtype = float)
+#a nx3 1/n matrix for mse
+avg_mse_matrix = np.full((len(file_names),3),1./len(path_folder_names),dtype = float)
+
+#a nx1 matrix for aed
+total_aed_matrix = np.zeros(len(file_names),dtype = float)
 #a nx1 matrix for process time
 process_time_matrix = np.zeros(len(file_names),dtype = float)
-#a 1/n file names
+#a 1/n proces time matrix
 avg_process_time_matrix = np.full(len(file_names),1./len(path_folder_names),dtype = float)
+#a 1/n aed matrix
+avg_aed_matrix = np.full(len(file_names),1./len(path_folder_names),dtype = float)
+
 method_id = 6
 one_method_result = []
 for i in range(len(path_folder_names)):
@@ -142,21 +157,24 @@ for i in range(len(path_folder_names)):
     #path of file name
     path_file_names =  [os.path.join(path_folder_names[i],name) for name in file_names]
     method_results = read_from_folder(path_file_names)
+    #print only 1 method dector-descriptor of all dataset
     one_method_result.append(method_results[method_id])
     #name of output file is name of the folder
     outputfile_name = ''.join((folder_names[i],".csv"))
     print(outputfile_name)
-    total_mse,process_time = write_to_csv(outputfile_name,file_names,method_results)
+    total_mse, total_aed ,process_time = write_to_csv(outputfile_name,file_names,method_results)
     total_mse_matrix += np.array(total_mse)
     process_time_matrix += np.array(process_time)
+    total_aed_matrix += np.array(total_aed)
 file_name = file_names[i].replace('.txt','.csv')
 write_onemethod_csv(file_name,folder_names,one_method_result)
 #print(total_avg_matrix)
 #print(total_mse_matrix)
-total_avg_result = total_mse_matrix*total_avg_matrix
+total_avg_result = total_mse_matrix*avg_mse_matrix
 process_time_result = process_time_matrix*avg_process_time_matrix
+aed_result = total_aed_matrix*avg_aed_matrix
 #print(total_avg_result)
-avg_mse = write_avg_result_to_csv("final_avg_result.csv",file_names,total_avg_result,process_time_result)
+write_avg_result_to_csv("final_avg_result.csv",file_names,total_avg_result,aed_result,process_time_result)
 #avg result to final output
 
 #Draw Graph
@@ -166,15 +184,16 @@ markers = ["o","s","D","^","P","*"] #circle, square, diamond, pentagon, plus, he
 #descriptor
 #Assume nubmer of colors = number of Descriptors
 colors = ["gold","orangered","blue","aqua","green","deeppink"]
-featureDict, detectors_marker, descriptors_color = getDetectorDescriptor(file_names,avg_mse,process_time_result,markers,colors)
+
+featureDict, detectors_marker, descriptors_color = getDetectorDescriptor(file_names,aed_result,process_time_result,markers,colors)
 #print(featureDict)
 fig, ax = plt.subplots()
 ax.set_facecolor('whitesmoke')
 #plot features
 for feature in featureDict:
-    ax.scatter(feature["time"],feature["mse"],s = 50, color = feature["color"],marker= feature["marker"],edgecolors='black')
+    ax.scatter(feature["time"],feature["aed"],s = 50, color = feature["color"],marker= feature["marker"],edgecolors='black')
 plt.xlabel('CPU Time (s)')
-plt.ylabel('Overall MSE')
+plt.ylabel('Overall AED')
 plt.title('Comparison of Accuracy vs Speed of Feature Detectors-Descriptors', fontsize = 10)
 #plot empty list with desized color and label
 
@@ -192,6 +211,7 @@ h, l =  ax.get_legend_handles_labels()
 
 legend2 = ax.legend(h[-6:12],l[-6:12], bbox_to_anchor=(1.04, 0), frameon=True,loc ="lower left", title='Descriptors')
 plt.subplots_adjust(right=0.7)
-
+#plt.yticks(np.arange(1, 2.5, 0.5))
+#plt.xticks(np.arange(0, 3, 0.4))
 plt.show()
 fig.savefig('feature.png')

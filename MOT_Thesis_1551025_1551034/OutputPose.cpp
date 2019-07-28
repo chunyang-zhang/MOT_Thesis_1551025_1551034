@@ -31,6 +31,11 @@ void OutputPose::setAvgFeatureTime(float avgFeatureTime)
 	this->avgFeatureTime = avgFeatureTime;
 }
 
+void OutputPose::setAED(float aed)
+{
+	this->aed = aed;
+}
+
 float OutputPose::getTime()
 {
 	return time;
@@ -65,8 +70,8 @@ void OutputPose::output(ofstream& fout)
 {
 	if (fout.is_open())
 	{
-		fout << "Time(s), Number Of Pics, Distance (m), Velocity(m/s), MSE x, MSE y, MSE z, FeatureTime (s)" << endl;
-		fout << time << ", " << numPics << ", " << distance << ", " << velocity << ", " << errPose[0] << ", " << errPose[1] << ", " << errPose[2]  <<", "<<avgFeatureTime<<endl;
+		fout << "Time(s), Number Of Pics, Distance (m), Velocity(m/s), MSE x, MSE y, MSE z, AED, Avg Feature Time (s)" << endl;
+		fout << time << ", " << numPics << ", " << distance << ", " << velocity << ", " << errPose[0] << ", " << errPose[1] << ", " << errPose[2]  <<", "<< aed <<", "<<avgFeatureTime<<endl;
 		fout.close();
 	}
 }

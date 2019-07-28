@@ -174,11 +174,13 @@ BoundingBox YOLOObjectDetection::getBestBoundingBox()
 		for (size_t i = 1; i < indices.size(); ++i)
 		{
 			idx = indices[i];
+
 			if (confidence < confidences[idx])
 			{
 				confidence = confidences[idx];
 				bestIdx = idx;
 			}
+
 		}
 		bb.setClassId(classIds[bestIdx]);
 		bb.setConfidence(confidence);

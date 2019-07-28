@@ -140,7 +140,9 @@ public:
 	//main call this to process
 	void processFrame();
 	void setDetectDescriptorMethod(string detector, string descriptor);
+	//get mse of each coord
 	Point3D getMSE();
+	float getAED();
 	//get Output Pose
 	OutputPose getOutputPose();
 };

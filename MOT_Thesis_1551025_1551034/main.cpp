@@ -14,13 +14,14 @@ int main() {
 	//	waitKey(1);
 	//}
 	//return 0;
-	//vector<string> detector = { "brisk","orb","fast","star","gftt","agast"};
+	//vector<string> detector = {"brisk","orb", "star","agast"};
 
-	//vector<string> descriptor = { "brief","daisy","latch","freak"};
-	vector<string> detector = { "agast"};
-	vector<string> descriptor = { "latch"};
-	//vector<string> detector = { "fast","gftt" };
-	//vector<string> descriptor = { "brief" };
+	//vector<string> descriptor = { "brief","freak"};
+	//vector<string> detector = { "brisk","orb"};
+	//vector<string> descriptor = { "agast"};
+	vector<string> detector = {"agast" };
+
+	vector<string> descriptor = { "brief" };
 	string outputFile;
 	string det;
 	string des;
@@ -55,8 +56,11 @@ int main() {
 
 			Point3D mse = slam->getMSE();
 			outputPose.setErrorPose(mse);
+			float aed = slam->getAED();
+			outputPose.setAED(aed);
 			ofstream fout(outputFile);
 			outputPose.output(fout);
+
 			cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << endl;
 			delete slam;
 			if (detector[i].compare("orb") == 0 || detector[i].compare("brisk") == 0)
