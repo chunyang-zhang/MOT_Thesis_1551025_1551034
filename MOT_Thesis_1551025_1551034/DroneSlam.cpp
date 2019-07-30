@@ -1298,7 +1298,7 @@ void DroneSlam::processFrame()
 					currBoundingBox.setClassId(firstDetectedId);
 				}
 				currBoundingBox.setRegion(gtBBox);
-				originalBoundingBox = normalizeCroppedBox(currBoundingBox.getRegion());
+				originalBoundingBox = normalizeCroppedBox(currBoundingBox.getRegion(),image.cols,image.rows);
 				left = originalBoundingBox.x;
 				top = originalBoundingBox.y;
 				right = originalBoundingBox.x + originalBoundingBox.width;
