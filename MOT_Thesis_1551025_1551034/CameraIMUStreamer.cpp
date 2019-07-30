@@ -1,6 +1,6 @@
 #include "CameraIMUStreamer.h"
 using namespace cv;
-CameraIMUStreamer::CameraIMUStreamer() {
+CameraIMUStreamer::CameraIMUStreamer(string outputCamPos, string outputObjectPos) {
 	StereoCalibration stereoCabInfo;
 	//read the stereo info for calibrating
 	stereoCabInfo.readCalibrateInfo(camParams);
@@ -16,7 +16,8 @@ CameraIMUStreamer::CameraIMUStreamer() {
 	//enable IMU stream
 	turnIMUStream = 1;
 	//output gps and pose
-	outGPSandPose.open("all_pose.txt");
+	outGPSandPose.open(outputCamPos);
+	outObjectPose.open(outputObjectPos);
 
 }
 bool CameraIMUStreamer::connect()

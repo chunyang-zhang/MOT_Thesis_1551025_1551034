@@ -4,6 +4,7 @@ using namespace dnn;
 string YOLOObjectDetection::classesFile = "coco.names";
 String YOLOObjectDetection::modelConfiguration = "yolov3.cfg";
 String YOLOObjectDetection::modelWeights = "yolov3.weights";
+
 bool YOLOObjectDetection::objectDetect (Mat& output)
 {
 	//convert to blob datatype to feed into network
@@ -35,6 +36,24 @@ bool YOLOObjectDetection::objectDetect (Mat& output)
 	}
 	return true;
 
+}
+void YOLOObjectDetection::getAllBoundingBox(vector<BoundingBox>& bboxList)
+{
+	bboxList.clear();
+	BoundingBox bb;
+	int idx;
+	if (indices.size() != 0)
+	{
+		//Max(
+		for (size_t i = 0; i < indices.size(); ++i)
+		{
+			idx = indices[i];
+			bb.setClassId(classIds[idx]);
+			bb.setConfidence(confidences[idx]);
+			bb.setRegion(boxes[idx]);
+			bboxList.push_back(bb);
+		}
+	}
 }
 bool YOLOObjectDetection::getRelatedBoundingBox(int classId, const Rect& bRect, const Rect& processedBounding, BoundingBox &bb)
 {
@@ -111,6 +130,12 @@ float YOLOObjectDetection::calculateIoU(const Rect& boxA, const Rect& boxB)
 	float iou = 1.0 * interArea / (area1 + area2 - interArea);
 	return iou;
 }
+
+string YOLOObjectDetection::getNameOfClass(int classId)
+{
+	return classes[classId];
+}
+
 void YOLOObjectDetection::postprocess(cv::Mat& frame, const vector<cv::Mat>& outs)
 {
 	clearResult();
@@ -188,7 +213,7 @@ BoundingBox YOLOObjectDetection::getBestBoundingBox()
 	}
 	return bb;
 }
-void YOLOObjectDetection::drawPrediction(cv::Mat& output)
+void YOLOObjectDetection::drawPrediction(cv::Mat& output, Scalar color)
 {
 	if (indices.size() != 0)
 	{
@@ -197,7 +222,7 @@ void YOLOObjectDetection::drawPrediction(cv::Mat& output)
 			int idx = indices[i];
 			Rect box = boxes[idx];
 			drawPrediction(classIds[idx], confidences[idx], box.x, box.y,
-				box.x + box.width, box.y + box.height, output);
+				box.x + box.width, box.y + box.height,color, output);
 		}
 
 	}
@@ -205,13 +230,17 @@ void YOLOObjectDetection::drawPrediction(cv::Mat& output)
 
 void YOLOObjectDetection::setIoUThreshold(float iouRatio)
 {
-	iouThreshold *= iouRatio;
+	float value = iouThreshold * iouRatio;
+	if (value > 0.3)
+	{
+		iouThreshold *= iouRatio;
+	}
 }
 
-void YOLOObjectDetection::drawPrediction(int classId, float conf, int left, int top, int right, int bottom, cv::Mat& frame)
+void YOLOObjectDetection::drawPrediction(int classId, float conf, int left, int top, int right, int bottom, Scalar color,cv::Mat& frame)
 {
 	//Draw rectangle displaying the bounding box
-	rectangle(frame, Point(left, top), Point(right, bottom),Scalar(255,178,50),3);
+	rectangle(frame, Point(left, top), Point(right, bottom),color,3);
 	//Get the label for the class name and its confidence
 	string label = format("%.2f", conf);
 	if (!classes.empty())
@@ -226,6 +255,16 @@ void YOLOObjectDetection::drawPrediction(int classId, float conf, int left, int 
 	top = max(top, labelSize.height);
 	rectangle(frame, Point(left, top - round(1.5 * labelSize.height)), Point(left + round(1.5 * labelSize.width), top + baseLine), Scalar(255, 255, 255), FILLED);
 	putText(frame, label, Point(left, top), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 0));
+}
+void YOLOObjectDetection::drawPrediction(cv::Rect bbox, Mat& frame, Scalar scalar)
+{
+	int left = bbox.x;
+	int top = bbox.y;
+	int right = bbox.x + bbox.width;
+	int bottom = bbox.y + bbox.height;
+	//Draw rectangle displaying the bounding box
+	rectangle(frame, Point(left, top), Point(right, bottom), scalar, 3);
+	
 }
 //get the last layers name for forwarding into network
 vector<String> YOLOObjectDetection::getOutputNames(const Net& net)

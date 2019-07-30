@@ -39,9 +39,10 @@ public:
 	void disconnect() ;
 
 	bool read(CamerasIMUFrame::Ptr &frame) ;
-	CameraIMUStreamer();
+	CameraIMUStreamer(string outputCamPos,string outputObjectPos);
 	void threadReadImg();
 	ofstream outGPSandPose;
+	ofstream outObjectPose;
 	int getNumFrames();
 };
 

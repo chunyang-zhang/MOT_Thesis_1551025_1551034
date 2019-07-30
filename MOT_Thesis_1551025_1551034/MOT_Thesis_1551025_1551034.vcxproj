@@ -134,14 +134,19 @@
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="DroneSlam.cpp" />
     <ClCompile Include="FeatureDetectTrack.cpp" />
+    <ClCompile Include="ImageMatching.cpp" />
     <ClCompile Include="IMUPackage.cpp" />
     <ClCompile Include="InputStreamer.cpp" />
     <ClCompile Include="KeyPointConversion.cpp" />
+    <ClCompile Include="LoadLabelResult.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="OutputAllTracking.cpp" />
     <ClCompile Include="OutputFile.cpp" />
     <ClCompile Include="OutputPose.cpp" />
+    <ClCompile Include="OutputTracking.cpp" />
     <ClCompile Include="StereoCalibration.cpp" />
     <ClCompile Include="StereoTriangulate.cpp" />
+    <ClCompile Include="TrackingGroundTruth.cpp" />
     <ClCompile Include="YOLOObjectDetection.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -155,14 +160,19 @@
     <ClInclude Include="DroneSlam.h" />
     <ClInclude Include="FeatureDetectTrack.h" />
     <ClInclude Include="FeatureStorage.h" />
+    <ClInclude Include="ImageMatching.h" />
     <ClInclude Include="IMUPackage.h" />
     <ClInclude Include="InputStreamer.h" />
     <ClInclude Include="KeyPointConversion.h" />
+    <ClInclude Include="LoadLabelResult.h" />
+    <ClInclude Include="OutputAllTracking.h" />
     <ClInclude Include="OutputFile.h" />
     <ClInclude Include="OutputPose.h" />
+    <ClInclude Include="OutputTracking.h" />
     <ClInclude Include="RPY.h" />
     <ClInclude Include="StereoCalibration.h" />
     <ClInclude Include="StereoTriangulate.h" />
+    <ClInclude Include="TrackingGroundTruth.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="YOLOObjectDetection.h" />

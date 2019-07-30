@@ -1,5 +1,5 @@
 names,Time(s),Number Of Pics,Distance (m),Velocity(m/s),MSE x,MSE y,MSE z,AED,Avg Feature Time (s)
-output_error_agast_brief,27.6312,268.0000,254.1900,9.1994,0.4793,2.7424,2.8038,2.1811,0.1511
+output_error_agast_brief,27.6312,268.0000,254.1900,9.1994,2.6293,2.6480,2.7580,2.3741,0.0814
 output_error_agast_daisy,27.6312,268.0000,254.1900,9.1994,0.2778,2.6991,3.3065,2.2299,0.9206
 output_error_agast_freak,27.6312,268.0000,254.1900,9.1994,2.5392,1.6326,2.6749,2.2301,0.0200
 output_error_agast_latch,27.6312,268.0000,254.1900,9.1994,1.3293,2.1437,3.0867,2.2639,0.1739

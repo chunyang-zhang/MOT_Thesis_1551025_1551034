@@ -33,13 +33,17 @@ private:
 public:
 	void setIoUThreshold(float iouRatio);
 	//Draw predicted bounding box
-	void drawPrediction(int classId, float conf, int left, int top, int right, int bottom, cv::Mat& frame);
+	void drawPrediction(int classId, float conf, int left, int top, int right, int bottom,cv::Scalar color, cv::Mat& frame);
+	void drawPrediction(cv::Rect bbox, cv::Mat& frame,cv::Scalar scalar);
 	BoundingBox getBestBoundingBox();
-	void drawPrediction(cv::Mat& output);
+	void drawPrediction(cv::Mat& output,cv::Scalar color);
 	YOLOObjectDetection(float confThreshold, float nmsThreshold, float inpWidth, float inpHeight);
 	YOLOObjectDetection();
+	//call after object detection
+	void getAllBoundingBox(vector<BoundingBox>& bboxList);
 	bool objectDetect(cv::Mat& output );
 	bool getRelatedBoundingBox(int classId,const cv::Rect& bRect, const cv::Rect& processedBounding, BoundingBox& bb);
 	float calculateIoU(const cv::Rect& boxA, const cv::Rect& boxB);
+	string getNameOfClass(int classId);
 };
 

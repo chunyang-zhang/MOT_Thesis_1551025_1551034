@@ -14,6 +14,9 @@
 #include"BoundingBox.h"
 #include"OutputPose.h"
 #include"BoundingBox3D.h"
+#include"ImageMatching.h"
+#include"TrackingGroundTruth.h"
+#include "OutputTracking.h"
 #pragma comment(lib,"ws2_32.lib") //Winsock Library
 
 class DroneSlam
@@ -47,9 +50,15 @@ private:
 	// process module
 	//Tracker and detect
 	FeatureDetectTrack* detectAndTracker;
+
+	//Image Matching
+	ImageMatching* imageMatching;
 	//stereo image system to find the 3D pos
 	StereoTriangulate* triangulateStereo;
 
+	//argument type
+	string trackingMethod;
+	string runMethod;
 	//Compare result vs GPS
 	cv::Mat result1, result2, result3;
 
@@ -62,6 +71,10 @@ private:
 	//gpsPose
 	Point3DVector GPSPose;
 	OutputPose outputPose;
+	
+
+	OutputTracking trackingResult;
+	vector<TrackingGroundTruth> groundTruthList;
 	//ErrorPose
 	Point3DVector errPose;
 	float xMSE = 0;
@@ -122,10 +135,10 @@ private:
 	// IMU reader
 	bool readIMU(float& roll, float& pitch, float& yaw, double& time);
 	bool readAllIMU();
+	Point3D convertFromCameraToWorld(const Point3D& camPos, const Mat3x3& cameraToWorld);
 
-
+	vector<TrackingGroundTruth> objectLocalizationResult;
 	
-
 	// compute rotation matrix from IMU
 	Mat3x3 getRotationMatrix(float roll, float pitch, float yaw);
 	void drawGPSResult(cv::Mat& result);
@@ -134,15 +147,29 @@ private:
 	void findFeaturePoints(Point3DVector & pointsInside2DBox, cv::Rect boundingBox);
 	float getTotalProcessTime();
 	float getTotalDistance();
+	//round value for display
+	string roundValue(float value, int decimal);
+
+	//normalize box
+	cv::Rect normalizeCroppedBox(cv::Rect oriBox, float width, float height);
+
 public:
-	DroneSlam();
+	DroneSlam(string outCamPose,string outObjectPose);
 	~DroneSlam();
 	//main call this to process
+
 	void processFrame();
 	void setDetectDescriptorMethod(string detector, string descriptor);
 	//get mse of each coord
 	Point3D getMSE();
 	float getAED();
+	
 	//get Output Pose
 	OutputPose getOutputPose();
+	//get Tracking result
+	OutputTracking getTrackingResult();
+	vector<TrackingGroundTruth> getObjectLocalizationResult();
+	void setGroundTruthValue(vector<TrackingGroundTruth> groundTruthValue);
+	void setTrackingMethod(string trackingMethod);
+	void setRunningMethod(string runMethod);
 };
