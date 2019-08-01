@@ -12,6 +12,7 @@ private:
 	Point3D errPose;
 	float avgFeatureTime;
 	float aed;
+	bool isEmpty;
 public:
 	//Set value
 	void setTime(float t);
@@ -29,7 +30,8 @@ public:
 	Point3D getErrorPose();
 	float getAvgFeatureTime( );
 
-
+	bool getIsEmpty();
+	void setIsEmpty(bool empty);
 	// Inherited via OutputFile
 	void output(ofstream& fout) override;
 

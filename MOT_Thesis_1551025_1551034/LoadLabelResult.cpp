@@ -23,7 +23,12 @@ vector<TrackingGroundTruth> LoadLabelResult::getTrackingGroundTruth(string name)
 			Point3D pos = Point3D(posx, posy, posz);
 			TrackingGroundTruth groundTruth(frameId, index, labelName, bbox, pos);
 			groundTruthList.push_back(groundTruth);
+			labelFile.ignore(10000, '\n');
 		}
+	}
+	else {
+		cout << "Require Label File For Ground Truth" << endl;
+		terminate();
 	}
 	labelFile.close();
 	return groundTruthList;

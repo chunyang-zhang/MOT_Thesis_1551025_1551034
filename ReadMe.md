@@ -1,6 +1,5 @@
-# Moving Object Tracking 
+# Object Tracking on a Moving Platform
 
-## OpenCV 4.1
 ### Requirement:
 #### OpenCV 4.1
 Download OpenCV 4.0

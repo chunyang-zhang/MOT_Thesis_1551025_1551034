@@ -10,11 +10,6 @@ void OutputTracking::setIoU50(float iou50)
 	this->iou50 = iou50;
 }
 
-void OutputTracking::setAeD(float aed)
-{
-	this->aed = aed;
-}
-
 void OutputTracking::setObjectName(string name)
 {
 	this->name = name;
@@ -23,6 +18,11 @@ void OutputTracking::setObjectName(string name)
 void OutputTracking::setTime(float time)
 {
 	this->time = time;
+}
+
+void OutputTracking::setId(float Id)
+{
+	this->id = Id;
 }
 
 float OutputTracking::getIoU75()
@@ -35,10 +35,22 @@ float OutputTracking::getIoU50()
 	return iou50;;
 }
 
-float OutputTracking::getAED()
+int OutputTracking::getId()
 {
-	return aed;
+	return id;
 }
+
+bool OutputTracking::getIsEmpty()
+{
+	return isEmpty;
+}
+
+void OutputTracking::setIsEmpty(bool empty)
+{
+	this->isEmpty = empty;
+}
+
+
 
 string OutputTracking::getObjectName()
 {
@@ -50,17 +62,17 @@ float OutputTracking::getTime()
 	return time;
 }
 
-OutputTracking::OutputTracking(string name, float iou50, float iou75, float aed, float time):
-	name(name),iou50(iou50),iou75(iou75),aed(aed),time(time)
+OutputTracking::OutputTracking(int id, string name, float iou50, float iou75, float time):
+	id(id), name(name),iou50(iou50),iou75(iou75),time(time)
 {
 }
 
 OutputTracking::OutputTracking()
 {
-}
+}                                                                        
 
 void OutputTracking::output(ofstream& fout)
 {
-	fout << name << " " << iou50 << " " << iou75 << " " << aed <<" "<< time << endl;
+	fout << id<<" "<<name << " " << iou50 << " " << iou75 << " "<< time << endl;
 }
 

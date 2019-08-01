@@ -118,12 +118,14 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\opencv\build\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\opencv\build\install\include;C:\opencv\build\include;C:\Program Files (x86)\boost_1_70_0;C:\Program Files (x86)\Eigen</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>C:\opencv\build\x64\vc14\lib;C:\Program Files (x86)\boost_1_70_0;C:\opencv\build\install\x64\vc16\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opencv_world410.lib;opencv_xfeatures2d410.lib;opencv_features2d410.lib;opencv_tracking410.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -140,8 +142,10 @@
     <ClCompile Include="KeyPointConversion.cpp" />
     <ClCompile Include="LoadLabelResult.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="OutputAllObjectPose.cpp" />
     <ClCompile Include="OutputAllTracking.cpp" />
     <ClCompile Include="OutputFile.cpp" />
+    <ClCompile Include="OutputObjectPose.cpp" />
     <ClCompile Include="OutputPose.cpp" />
     <ClCompile Include="OutputTracking.cpp" />
     <ClCompile Include="StereoCalibration.cpp" />
@@ -165,10 +169,13 @@
     <ClInclude Include="InputStreamer.h" />
     <ClInclude Include="KeyPointConversion.h" />
     <ClInclude Include="LoadLabelResult.h" />
+    <ClInclude Include="OutputAllObjectPose.h" />
     <ClInclude Include="OutputAllTracking.h" />
     <ClInclude Include="OutputFile.h" />
+    <ClInclude Include="OutputObjectPose.h" />
     <ClInclude Include="OutputPose.h" />
     <ClInclude Include="OutputTracking.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="RPY.h" />
     <ClInclude Include="StereoCalibration.h" />
     <ClInclude Include="StereoTriangulate.h" />
@@ -176,6 +183,9 @@
     <ClInclude Include="Types.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="YOLOObjectDetection.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MOT_Thesis_1551025_1551034.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

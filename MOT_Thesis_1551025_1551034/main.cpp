@@ -6,29 +6,47 @@
 #include"TrackingGroundTruth.h"
 #include"OutputTracking.h"
 #include"OutputAllTracking.h""
+#include"OutputObjectPose.h"
+#include"OutputAllObjectPose.h"
 using namespace cv;
-int main() {
-	//Mat img;
-	//VideoCapture vc;
-	//vc.open(0);
-	//while (vc.read(img))
-	//{
-	//	cvtColor(img, img, COLOR_RGB2GRAY);
-	//	imshow("frame",img);
-	//	waitKey(1);
-	//}
-	//return 0;
-	//vector<string> detector = {"brisk","orb", "star","agast"};
-
-	//vector<string> descriptor = { "brief","freak"};
-	//vector<string> detector = { "brisk","orb"};
-	//vector<string> descriptor = { "agast"};
+int main(int argc, char** argv) {
+	//Argument
+	int counter;
+	cout<<"Program Name Is: %s"<< argv[0]<<endl;
+	if (argc == 1)
+		cout << "No Extra Command Line Argument Passed. Used Default Set Up" << endl;
+	if (argc >= 2 && argc <6)
+	{
+		if (strcmp(argv[1], "demo")!=0 && strcmp(argv[1], "test")!=0)
+		{
+			cout << "There are 2 options: demo | test." << endl;
+			return 0;
+		}
+		if (strcmp(argv[2], "IoU")!=0 && strcmp(argv[2], "ImageMatching")!=0 && strcmp(argv[2], "IoUMatching")!=0 && strcmp(argv[2], "all")!=0)
+		{
+			cout << "There are 4 options for tracking: IoU | IoUMatching | ImageMatching | all." << endl;
+			return 0;
+		}		
+		if (strcmp(argv[3],"gftt")!=0 && strcmp(argv[3],"agast")!=0 && strcmp(argv[3], "star")!=0 && strcmp(argv[3], "brisk")!=0 && strcmp(argv[3], "orb")!=0 && !strcmp(argv[3],"fast")!=0)
+		{
+			cout << "There are 6 options for detector: gftt | agast | star | brisk | orb | fast." << endl;
+			return 0;
+		}
+		if (strcmp(argv[4], "brief")!=0 && strcmp(argv[4], "daisy")!=0 && strcmp(argv[4], "freak")!=0 && strcmp(argv[4],"latch")!=0 && strcmp(argv[4], "brisk")!=0 && strcmp(argv[4],"orb")!=0)
+		{
+			cout << "There are 6 options: brief | daisy | freak | latch | brisk | orb." << endl;
+			return 0;
+		}
+	}
+	else if(argc>=6)
+	{
+		cout << "Your argument list is out of range!" << endl;
+		return 0;
+	}
+	cout << "HERE" << endl;
 	vector<TrackingGroundTruth> groundTruthList;
 	LoadLabelResult labelResult;
-	vector<string> detector = {"gftt" };
 	vector<vector<TrackingGroundTruth>> groundTruthOrderList;
-	vector<string> descriptor = { "brief" };
-	string outputFile;
 	string det;
 	string des;
 	string matchingMethod;
@@ -36,18 +54,129 @@ int main() {
 	string outFolder = "Output/";
 	string outCamPose = outFolder+ "cam_pose.txt";
 	string outObjectPose = outFolder+ "object_pose";
+	string outErrorObjectPose = outFolder + "error_object_pose";
+	string outTrackingResult = outFolder + "tracking_result_";
 	string runMethod = "test";
-	string outTrackingResult=outFolder;
+
+	//OutputTracking Info
 	vector<OutputTracking> outputTrackingList;
 	OutputAllTracking outputAllTracking;
-	if (matchingMethod.empty())
+	//Output Pose Info
+	vector<OutputObjectPose> outputObjectPoseList;
+	OutputAllObjectPose outputAllPose;
+	bool isTracked = false;
+	string chosenDetector = "gftt";
+	string chosenDescriptor = "brief";
+	string trackingMethod = "all";//"IoUMatching";
+	if (argc == 2)
 	{
-		trackingMethodVector =  { "ImageMatching", "IoUMatching", "IoU" };
+		runMethod = argv[1];
+	}
+	else if (argc == 3)
+	{
+		runMethod = argv[1];
+		trackingMethod = argv[2];
+		cout << "TrackingMethod" << trackingMethod << endl;;
+	}
+	else if (argc == 4)
+	{
+		cout << "Please input a descriptor for the detector" << endl;
+		return 0;
+	}
+	else if (argc == 5)
+	{
+		if (argv[3] == "fast" &&  argv[4]!= "brief")
+		{
+			cout << "This option is not available!" << endl;
+			cout << "Please try with brief descriptor." << endl;
+			return 0;
+		}
+		if ((argv[3] == "brisk" && argv[4] != "brisk") ||( argv[3] != "brisk" && argv[4] == "brisk"))
+		{
+			cout << "This option is not available!" << endl;
+			cout << "Please try with brisk." << endl;
+			return 0;
+		}
+		if ((argv[3] == "orb" && argv[4] != "orb") || (argv[3] != "orb" && argv[4] == "orb"))
+		{
+			cout << "This option is not available!" << endl;
+			cout << "Please try with orb." << endl;
+			return 0;
+		}
+		runMethod = argv[1];
+		trackingMethod = argv[2];
+		chosenDetector = argv[3];
+		chosenDescriptor = argv[4];
+
+	}
+	cout << "Value"<<trackingMethod << endl;
+	if (trackingMethod.compare("all")==0)
+	{
+		trackingMethodVector =  { "ImageMatching", "IoU","IoUMatching" };
 	}
 	else {
-		trackingMethodVector.push_back(matchingMethod);
+		trackingMethodVector.push_back(trackingMethod);
 	}
-	for (size_t i = 0; i < detector.size();i++)
+	//Load ground truth file
+	groundTruthList = labelResult.getTrackingGroundTruth("./DATA/label.txt");
+	groundTruthOrderList = labelResult.getTrackingGroundByOrder(groundTruthList);
+	for (size_t j = 0;j < trackingMethodVector.size();j++)
+	{
+		//object Pose
+		string outErrorObjectPoseTmp = outErrorObjectPose + "_" + trackingMethodVector[j] + ".txt";
+		string outTrackingResultTmp =  outTrackingResult + trackingMethodVector[j] + ".txt";
+
+		for (size_t i = 0; i < groundTruthOrderList.size();i++)
+		{
+			string outputFileTmp = outFolder + trackingMethodVector[j] + "_" + to_string(i) + "_"+"output_error_" + chosenDetector + "_" + chosenDescriptor + ".txt";
+			string outObjectPoseTmp = outObjectPose + "_" + groundTruthOrderList[i][0].getName()+ to_string(i)+"_" +trackingMethodVector[j] + ".txt";
+
+			cout << "Method: " << outputFileTmp << endl;
+			cout << "File Object Pose at each Frame: " << outObjectPoseTmp << endl;
+			clock_t start = clock();
+			DroneSlam* slam = new DroneSlam(outCamPose, outObjectPoseTmp);
+			OutputPose outputPose;
+			slam->setDetectDescriptorMethod(chosenDetector, chosenDescriptor);
+			slam->setGroundTruthValue(groundTruthOrderList[i]);
+			slam->setTrackingMethod(trackingMethodVector[j]);
+			slam->setRunningMethod(runMethod);
+			slam->processFrame();
+			isTracked = slam->getIsTracked();
+			if (!isTracked)
+			{
+				continue;
+			}
+			outputPose = slam->getOutputPose();
+
+			
+			ofstream fout(outputFileTmp);
+			outputPose.output(fout);
+			//tracking value result
+
+			OutputTracking outputTracking = slam->getTrackingResult();
+			outputTrackingList.push_back(outputTracking);
+			OutputObjectPose outputObjectPose = slam->getOutputObjectPose();
+			if (!outputObjectPose.getIsEmpty())
+			{
+				outputObjectPoseList.push_back(outputObjectPose);
+			}
+			cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << endl;
+			delete slam;
+
+		}
+		//out tracking result of 1 method
+		outputAllTracking.setOutputTrackingList(outputTrackingList);
+		ofstream fout(outTrackingResultTmp);
+		outputAllTracking.output(fout);
+		outputTrackingList.clear();
+		//out object pose result of 1 method
+		outputAllPose.setOutputObjectPoseList(outputObjectPoseList);
+		ofstream foutError(outErrorObjectPoseTmp);
+		outputAllPose.output(foutError);
+		outputObjectPoseList.clear();
+	}
+	//Test Detector Descriptor
+	/*for (size_t i = 0; i < detector.size();i++)
 	{
 		for (size_t j = 0; j < descriptor.size();j++)
 		{
@@ -64,53 +193,19 @@ int main() {
 				det = detector[i];
 				des = descriptor[j];
 			}
+			clock_t start = clock();
+			DroneSlam* slam = new DroneSlam(outCamPose, outObjectPose);
+			ofstream fout(outputFile);
+			OutputPose outputPose = slam->getOutputPose();
 
-			outputFile = outFolder+"output_error_";
-			outputFile += det + "_" + des + ".txt";
-			cout << "Method: " << outputFile << endl;
-			groundTruthList = labelResult.getTrackingGroundTruth("./DATA/label.txt");
-			groundTruthOrderList = labelResult.getTrackingGroundByOrder(groundTruthList);
-			for (size_t j = 0;j < trackingMethodVector.size();j++)
+			outputPose.output(fout);
+			if (detector[i].compare("orb") == 0 || detector[i].compare("brisk") == 0)
 			{
-				outObjectPose.append("_" +trackingMethodVector[i]+ ".txt");
-				outTrackingResult.append(trackingMethodVector[i] + "_result.txt");
-				for (size_t i = 0; groundTruthOrderList.size();i++)
-				{
-					clock_t start = clock();
-					DroneSlam* slam = new DroneSlam(outCamPose, outObjectPose);
-					OutputPose outputPose;
-					slam->setDetectDescriptorMethod(det, des);
-					slam->setGroundTruthValue(groundTruthOrderList[i]);
-					slam->setTrackingMethod(trackingMethodVector[j]);
-					slam->setRunningMethod(runMethod);
-					slam->processFrame();
-					
-					outputPose = slam->getOutputPose();
-					Point3D mse = slam->getMSE();
-					outputPose.setErrorPose(mse);
-					float aed = slam->getAED();
-
-					outputPose.setAED(aed);
-					ofstream fout(outputFile);
-					outputPose.output(fout);
-					//tracking value result
-
-					OutputTracking outputTracking = slam->getTrackingResult();
-					outputTrackingList.push_back(outputTracking);
-					cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << endl;
-					delete slam;
-					if (detector[i].compare("orb") == 0 || detector[i].compare("brisk") == 0)
-					{
-						break;
-					}
-				}
-				//outtracking result of 1 method
-				outputAllTracking.setOutputTrackingList(outputTrackingList);
-				ofstream fout(outTrackingResult);
-				outputAllTracking.output(fout);
-				outputTrackingList.clear();
+				break;
 			}
+			cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << endl;
+
 		}
-	}
+	}*/
 	//waitKey(0);
 }

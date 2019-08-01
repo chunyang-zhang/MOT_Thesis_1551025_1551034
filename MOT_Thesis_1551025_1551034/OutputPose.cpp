@@ -66,6 +66,16 @@ float OutputPose::getAvgFeatureTime()
 	return avgFeatureTime;
 }
 
+bool OutputPose::getIsEmpty()
+{
+	return isEmpty;
+}
+
+void OutputPose::setIsEmpty(bool empty)
+{
+	this->isEmpty = empty;
+}
+
 void OutputPose::output(ofstream& fout)
 {
 	if (fout.is_open())

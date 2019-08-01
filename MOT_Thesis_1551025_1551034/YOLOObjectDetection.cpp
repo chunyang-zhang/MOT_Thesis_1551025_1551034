@@ -231,9 +231,9 @@ void YOLOObjectDetection::drawPrediction(cv::Mat& output, Scalar color)
 void YOLOObjectDetection::setIoUThreshold(float iouRatio)
 {
 	float value = iouThreshold * iouRatio;
-	if (value > 0.3)
+	if (value > 0.27)
 	{
-		iouThreshold *= iouRatio;
+		iouThreshold = value;
 	}
 }
 
@@ -310,6 +310,6 @@ confThreshold(0.5),nmsThreshold(0.5),inpWidth(416),inpHeight(416)
 	net.setPreferableBackend(DNN_BACKEND_OPENCV);
 	//to use for cpu, GPU: DNN_TARGET_OPENCL
 	net.setPreferableTarget(DNN_TARGET_CPU);
-	iouThreshold = 0.65f;
+	iouThreshold = 0.50f;
 
 }

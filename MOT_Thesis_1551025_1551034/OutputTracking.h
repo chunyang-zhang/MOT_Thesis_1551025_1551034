@@ -9,20 +9,23 @@ private:
 	string name;
 	float iou75;
 	float iou50;
-	float aed;
 	float time;
+	int id;
+	bool isEmpty;
 public:
 	void setIoU75(float iou75);
 	void setIoU50(float iou50);
-	void setAeD(float aed);
 	void setObjectName(string name);
 	void setTime(float time);
+	void setId(float Id);
 	float getIoU75();
 	float getIoU50();
-	float getAED();
+	int getId();
+	bool getIsEmpty();
+	void setIsEmpty(bool empty);
 	string getObjectName();
 	float getTime();
-	OutputTracking(string name, float iou50, float iou75, float aed,float time);
+	OutputTracking(int id, string name, float iou50, float iou75, float time);
 	OutputTracking();
 	// Inherited via OutputFile
 	void output(ofstream& fout) override;

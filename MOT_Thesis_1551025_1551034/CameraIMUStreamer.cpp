@@ -28,6 +28,8 @@ bool CameraIMUStreamer::connect()
 	//String pathTime = "./";
 	//String pathTimeStamps = "";
 	//load whole images folder
+	canTrack = true;
+	stopTrack = false;
 	glob(pathL, fn1, false);
 	glob(pathR, fn2, false);
 	if (fn1.size() <= 0 || fn2.size() <= 0)
@@ -97,7 +99,26 @@ void CameraIMUStreamer::threadReadImg()
 			cout << "Finish!" << endl;
 			//close position file
 			outGPSandPose.close();
+			outObjectPose.close();
 			break;
+		}
+		if (!canTrack)
+		{
+			cout << "Finish!" << endl;
+			//close position file
+			outGPSandPose.close();
+			outObjectPose.close();
+
+			break;
+		}
+		if (stopTrack)
+		{
+				cout << "Finish!" << endl;
+				//close position file
+				outGPSandPose.close();
+				outObjectPose.close();
+
+				break;
 		}
 		if (imgStreamId == frameCounter) 
 		{
@@ -132,6 +153,16 @@ void CameraIMUStreamer::threadReadImg()
 			imgStreamId++;
 		}
 	}
+}
+
+void CameraIMUStreamer::setStopTrack(bool stopTrack)
+{
+	this->stopTrack = stopTrack;
+}
+
+void CameraIMUStreamer::setCanTrack(bool canTrack)
+{
+	this->canTrack = canTrack;
 }
 
 int CameraIMUStreamer::getNumFrames()

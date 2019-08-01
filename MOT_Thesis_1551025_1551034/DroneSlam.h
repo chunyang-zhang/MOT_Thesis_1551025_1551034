@@ -17,6 +17,7 @@
 #include"ImageMatching.h"
 #include"TrackingGroundTruth.h"
 #include "OutputTracking.h"
+#include "OutputObjectPose.h"
 #pragma comment(lib,"ws2_32.lib") //Winsock Library
 
 class DroneSlam
@@ -72,18 +73,21 @@ private:
 	Point3DVector GPSPose;
 	OutputPose outputPose;
 	
+	//ObjectPose 
+	OutputObjectPose outputObjPose;
 
 	OutputTracking trackingResult;
 	vector<TrackingGroundTruth> groundTruthList;
 	//ErrorPose
 	Point3DVector errPose;
-	float xMSE = 0;
-	float yMSE = 0;
-	float zMSE = 0;
+
 
 	//Keypoint Conversion helper
 	KeyPointConversion keyPointConversion;
 	YOLOObjectDetection* objectDetection;
+
+	bool isTracked;
+	bool noTracked;
 private:
 	//init map for stereo with keypoint, 3D local space, 
 	void addFeaturesToLocalMap(vector<cv::KeyPoint>& keyPoints1, vector<cv::DMatch>& stereoMatches, Point3DVector& point3DStereo, vector<float>& allQuality,int frameId,const CameraParameters& camParams );
@@ -150,8 +154,6 @@ private:
 	//round value for display
 	string roundValue(float value, int decimal);
 
-	//normalize box
-	cv::Rect normalizeCroppedBox(cv::Rect oriBox, float width, float height);
 
 public:
 	DroneSlam(string outCamPose,string outObjectPose);
@@ -161,15 +163,22 @@ public:
 	void processFrame();
 	void setDetectDescriptorMethod(string detector, string descriptor);
 	//get mse of each coord
-	Point3D getMSE();
 	float getAED();
 	
 	//get Output Pose
 	OutputPose getOutputPose();
 	//get Tracking result
 	OutputTracking getTrackingResult();
+	//Get Output Object Pose
+	OutputObjectPose getOutputObjectPose();
+
 	vector<TrackingGroundTruth> getObjectLocalizationResult();
 	void setGroundTruthValue(vector<TrackingGroundTruth> groundTruthValue);
 	void setTrackingMethod(string trackingMethod);
 	void setRunningMethod(string runMethod);
+
+	//bool check wheter can track value
+	bool getIsTracked();
+	//bool check whtether can start tracking
+	bool getNoTracked();
 };

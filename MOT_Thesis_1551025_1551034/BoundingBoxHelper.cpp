@@ -35,4 +35,34 @@ Rect BoundingBoxHelper::getOriginalBoundingBox(Rect bRect, int x, int y)
 	return Rect(newX,newY,bRect.width,bRect.height);
 }
 
+cv::Rect BoundingBoxHelper::normalizeCroppedBox(cv::Rect oriBox, float width, float height)
+{
+
+	int x = oriBox.x;
+	int y = oriBox.y;
+	int bWidth = oriBox.width;
+	int bHeight = oriBox.height;
+	int right = x + bWidth;
+	int bottom = y + bHeight;
+	//width, height is max of the dimension of Mat
+	if (x < 0)
+	{
+		x = 0;
+	}
+	if (y < 0)
+	{
+		y = 0;
+	}
+	if (right >= width)
+	{
+		bWidth = width - x - 1;
+	}
+	if (bottom >= height)
+	{
+		bHeight = height - y - 1;
+	}
+	Rect newBox(x, y, bWidth, bHeight);
+	return newBox;
+}
+
 

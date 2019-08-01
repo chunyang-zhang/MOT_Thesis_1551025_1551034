@@ -1,27 +1,6 @@
 #include "ImageMatching.h"
 using namespace cv;
 
-cv::Rect ImageMatching::normalizeCroppedBox(cv::Rect oriBox, float width, float height)
-{
-	int x = oriBox.x;
-	int y = oriBox.y;
-	int bWidth = oriBox.width;
-	int bHeight = oriBox.height;
-	int right = x +  bWidth;
-	int bottom = y + bHeight;
-	//width, height is max of the dimension of Mat
-	if (right > width)
-	{
-		bWidth = width - x -1;
-	}
-	if (bottom > height)
-	{
-		bHeight = height - y- 1;
-	}
-	Rect newBox(x, y, bWidth, bHeight);
-	return newBox;
-}
-
 int ImageMatching::getBoundingBoxImageMatching(const cv::Mat& preBBoxFrame, const cv::Mat& detectFrame,int firstDetectedId, vector<BoundingBox>& bboxList)
 {
 	const int MIN_MATCH_COUNT = 10;
@@ -33,23 +12,35 @@ int ImageMatching::getBoundingBoxImageMatching(const cv::Mat& preBBoxFrame, cons
 	vector<vector<DMatch> > knn_matches;
 	const float ratio_thresh = 0.9f;
 	Rect newBox;
+	bool isDetect = false;
 	for (size_t i = 0;i < bboxList.size();i++)
 	{
-		if ((firstDetectedId == 2 && bboxList[i].getClassId() ==7)||firstDetectedId != bboxList[i].getClassId()) 
+		if ((firstDetectedId == 2 && bboxList[i].getClassId() == 7) || firstDetectedId == bboxList[i].getClassId())
 		{
-			newBox = normalizeCroppedBox(bboxList[i].getRegion(), detectFrame.cols, detectFrame.rows);
+			newBox = boxHelper.normalizeCroppedBox(bboxList[i].getRegion(), detectFrame.cols, detectFrame.rows);
 			objectFrame = detectFrame(newBox);
-			detector->detect(preBBoxFrame, keyPoints1);
+			if (!isDetect)
+			{
+				detector->detect(preBBoxFrame, keyPoints1);
+				if (keyPoints1.size() == 0)
+				{
+					continue;
+				}
+				briefDescriptor->compute(preBBoxFrame, keyPoints1, descriptor1);
+				if (descriptor1.empty())
+				{
+					continue;
+				}
+				isDetect = true;
+			}
 			detector->detect(objectFrame, keyPoints2);
-			if (keyPoints1.size() == 0 || keyPoints2.size() == 0) {
+			if ( keyPoints2.size() == 0) {
 				continue;
 			}
-			briefDescriptor->compute(preBBoxFrame, keyPoints1, descriptor1);
 			briefDescriptor->compute(objectFrame, keyPoints2, descriptor2);
-			if (descriptor1.empty() || descriptor2.empty()) {
+			if (descriptor2.empty()) {
 				continue;
 			}
-			// FLANN BASED knn matcher
 			matcher->knnMatch(descriptor1, descriptor2, knn_matches, 2);
 			vector<DMatch> good_matches;
 			for (size_t i = 0; i < knn_matches.size(); i++)
@@ -74,6 +65,11 @@ int ImageMatching::getBoundingBoxImageMatching(const cv::Mat& preBBoxFrame, cons
 				return i;
 			}
 		}
+	}
+	//release Mat
+	if (!objectFrame.empty())
+	{
+		objectFrame.release();
 	}
 	return -1;
 }

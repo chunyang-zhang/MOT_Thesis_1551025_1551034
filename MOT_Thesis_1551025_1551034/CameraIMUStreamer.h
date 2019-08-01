@@ -30,7 +30,8 @@ private:
 	double time;
 	int imgStreamId;
 	bool turnIMUStream;
-
+	bool canTrack;
+	bool stopTrack;
 public: 
 
 	// Inherited via InputStreamer
@@ -43,6 +44,9 @@ public:
 	void threadReadImg();
 	ofstream outGPSandPose;
 	ofstream outObjectPose;
+
+	void setStopTrack(bool stopTrack);
+	void setCanTrack(bool canTrack);
 	int getNumFrames();
 };
 
