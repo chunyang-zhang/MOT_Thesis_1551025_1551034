@@ -156,7 +156,7 @@ private:
 
 
 public:
-	DroneSlam(string outCamPose,string outObjectPose);
+	DroneSlam(string outCamPose);
 	~DroneSlam();
 	//main call this to process
 

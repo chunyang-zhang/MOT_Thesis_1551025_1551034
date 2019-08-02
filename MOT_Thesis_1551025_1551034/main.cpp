@@ -67,6 +67,11 @@ int main(int argc, char** argv) {
 	string chosenDetector = "gftt";
 	string chosenDescriptor = "brief";
 	string trackingMethod = "all";//"IoUMatching";
+	//vector<string> detector = {  "star", "brisk" ,"orb", "fast" };
+	vector<string> detector = { "brisk","orb","fast", "gftt","star","agast"};
+	vector<string> descriptor = {"brief", "daisy", "freak","latch" };
+
+
 	if (argc == 2)
 	{
 		runMethod = argv[1];
@@ -116,66 +121,67 @@ int main(int argc, char** argv) {
 		trackingMethodVector.push_back(trackingMethod);
 	}
 	//Load ground truth file
-	groundTruthList = labelResult.getTrackingGroundTruth("./DATA/label.txt");
-	groundTruthOrderList = labelResult.getTrackingGroundByOrder(groundTruthList);
-	for (size_t j = 0;j < trackingMethodVector.size();j++)
-	{
-		//object Pose
-		string outErrorObjectPoseTmp = outErrorObjectPose + "_" + trackingMethodVector[j] + ".txt";
-		string outTrackingResultTmp =  outTrackingResult + trackingMethodVector[j] + ".txt";
+	//groundTruthList = labelResult.getTrackingGroundTruth("./DATA/label.txt");
+	//groundTruthOrderList = labelResult.getTrackingGroundByOrder(groundTruthList);
+	//for (size_t j = 0;j < trackingMethodVector.size();j++)
+	//{
+	//	//object Pose
+	//	string outErrorObjectPoseTmp = outErrorObjectPose + "_" + trackingMethodVector[j] + ".txt";
+	//	string outTrackingResultTmp =  outTrackingResult + trackingMethodVector[j] + ".txt";
 
-		for (size_t i = 0; i < groundTruthOrderList.size();i++)
-		{
-			string outputFileTmp = outFolder + trackingMethodVector[j] + "_" + to_string(i) + "_"+"output_error_" + chosenDetector + "_" + chosenDescriptor + ".txt";
-			string outObjectPoseTmp = outObjectPose + "_" + groundTruthOrderList[i][0].getName()+ to_string(i)+"_" +trackingMethodVector[j] + ".txt";
+	//	for (size_t i = 0; i < groundTruthOrderList.size();i++)
+	//	{
+	//		string outputFileTmp = outFolder + trackingMethodVector[j] + "_" + to_string(i) + "_"+"output_error_" + chosenDetector + "_" + chosenDescriptor + ".txt";
+	//		string outObjectPoseTmp = outObjectPose + "_" + groundTruthOrderList[i][0].getName()+ to_string(i)+"_" +trackingMethodVector[j] + ".txt";
 
-			cout << "Method: " << outputFileTmp << endl;
-			cout << "File Object Pose at each Frame: " << outObjectPoseTmp << endl;
-			clock_t start = clock();
-			DroneSlam* slam = new DroneSlam(outCamPose, outObjectPoseTmp);
-			OutputPose outputPose;
-			slam->setDetectDescriptorMethod(chosenDetector, chosenDescriptor);
-			slam->setGroundTruthValue(groundTruthOrderList[i]);
-			slam->setTrackingMethod(trackingMethodVector[j]);
-			slam->setRunningMethod(runMethod);
-			slam->processFrame();
-			isTracked = slam->getIsTracked();
-			if (!isTracked)
-			{
-				continue;
-			}
-			outputPose = slam->getOutputPose();
+	//		cout << "Method: " << outputFileTmp << endl;
+	//		cout << "File Object Pose at each Frame: " << outObjectPoseTmp << endl;
+	//		clock_t start = clock();
+	//		DroneSlam* slam = new DroneSlam(outCamPose, outObjectPoseTmp);
+	//		OutputPose outputPose;
+	//		slam->setDetectDescriptorMethod(chosenDetector, chosenDescriptor);
+	//		slam->setGroundTruthValue(groundTruthOrderList[i]);
+	//		slam->setTrackingMethod(trackingMethodVector[j]);
+	//		slam->setRunningMethod(runMethod);
+	//		slam->processFrame();
+	//		isTracked = slam->getIsTracked();
+	//		if (!isTracked)
+	//		{
+	//			continue;
+	//		}
+	//		outputPose = slam->getOutputPose();
 
-			
-			ofstream fout(outputFileTmp);
-			outputPose.output(fout);
-			//tracking value result
+	//		
+	//		ofstream fout(outputFileTmp);
+	//		outputPose.output(fout);
+	//		//tracking value result
 
-			OutputTracking outputTracking = slam->getTrackingResult();
-			outputTrackingList.push_back(outputTracking);
-			OutputObjectPose outputObjectPose = slam->getOutputObjectPose();
-			if (!outputObjectPose.getIsEmpty())
-			{
-				outputObjectPoseList.push_back(outputObjectPose);
-			}
-			cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << endl;
-			delete slam;
+	//		OutputTracking outputTracking = slam->getTrackingResult();
+	//		outputTrackingList.push_back(outputTracking);
+	//		OutputObjectPose outputObjectPose = slam->getOutputObjectPose();
+	//		if (!outputObjectPose.getIsEmpty())
+	//		{
+	//			outputObjectPoseList.push_back(outputObjectPose);
+	//		}
+	//		cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << endl;
+	//		delete slam;
 
-		}
-		cout << "Finish Processing - Write to file!" << endl;
-		//out tracking result of 1 method
-		outputAllTracking.setOutputTrackingList(outputTrackingList);
-		ofstream fout(outTrackingResultTmp);
-		outputAllTracking.output(fout);
-		outputTrackingList.clear();
-		//out object pose result of 1 method
-		outputAllPose.setOutputObjectPoseList(outputObjectPoseList);
-		ofstream foutError(outErrorObjectPoseTmp);
-		outputAllPose.output(foutError);
-		outputObjectPoseList.clear();
-	}
+	//	}
+	//	cout << "Finish Processing - Write to file!" << endl;
+	//	//out tracking result of 1 method
+	//	outputAllTracking.setOutputTrackingList(outputTrackingList);
+	//	ofstream fout(outTrackingResultTmp);
+	//	outputAllTracking.output(fout);
+	//	outputTrackingList.clear();
+	//	//out object pose result of 1 method
+	//	outputAllPose.setOutputObjectPoseList(outputObjectPoseList);
+	//	ofstream foutError(outErrorObjectPoseTmp);
+	//	outputAllPose.output(foutError);
+	//	outputObjectPoseList.clear();
+	//}
 	//Test Detector Descriptor
-	/*for (size_t i = 0; i < detector.size();i++)
+	string outputFile;
+	for (size_t i = 0; i < detector.size();i++)
 	{
 		for (size_t j = 0; j < descriptor.size();j++)
 		{
@@ -192,8 +198,12 @@ int main(int argc, char** argv) {
 				det = detector[i];
 				des = descriptor[j];
 			}
+			outputFile = "output_error_" + det + "_" +des + ".txt";
 			clock_t start = clock();
-			DroneSlam* slam = new DroneSlam(outCamPose, outObjectPose);
+			DroneSlam* slam = new DroneSlam(outCamPose);
+			slam->setDetectDescriptorMethod(det, des);
+			slam->processFrame();
+
 			ofstream fout(outputFile);
 			OutputPose outputPose = slam->getOutputPose();
 
@@ -205,6 +215,6 @@ int main(int argc, char** argv) {
 			cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << endl;
 
 		}
-	}*/
+	}
 	//waitKey(0);
 }

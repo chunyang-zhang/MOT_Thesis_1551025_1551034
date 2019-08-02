@@ -1,6 +1,6 @@
 #include "CameraIMUStreamer.h"
 using namespace cv;
-CameraIMUStreamer::CameraIMUStreamer(string outputCamPos, string outputObjectPos) {
+CameraIMUStreamer::CameraIMUStreamer(string outputCamPos) {
 	StereoCalibration stereoCabInfo;
 	//read the stereo info for calibrating
 	stereoCabInfo.readCalibrateInfo(camParams);
@@ -17,8 +17,6 @@ CameraIMUStreamer::CameraIMUStreamer(string outputCamPos, string outputObjectPos
 	turnIMUStream = 1;
 	//output gps and pose
 	outGPSandPose.open(outputCamPos);
-	outObjectPose.open(outputObjectPos);
-
 }
 bool CameraIMUStreamer::connect()
 {
@@ -76,12 +74,10 @@ bool CameraIMUStreamer::read(CamerasIMUFrame::Ptr &frame)
 	//Release old Frame
 	frame->releaseFrame();
 
-	frame->mainFrame = mainImg;
-	frame->preMainFrame = preMainImg;
-	frame->subFrame = subImg;
-	//mainImg.copyTo(frame->mainFrame);
-	//preMainImg.copyTo(frame->preMainFrame);
-	//subImg.copyTo(frame->subFrame);
+
+	mainImg.copyTo(frame->mainFrame);
+	preMainImg.copyTo(frame->preMainFrame);
+	subImg.copyTo(frame->subFrame);
 	//Divide based on frame numbers
 	//FPS = 25 but = 40?
 	if (frameCounter % Config::priFPS == 0)
