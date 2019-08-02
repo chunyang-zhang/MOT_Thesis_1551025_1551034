@@ -14,6 +14,7 @@ public:
 	cv::Mat q;		//Disparity-to-depth mapping matrix?
 	cv::Mat map1x, map1y, map2x, map2y; //undistortion and rectification transformation map
 	Mat3x3 F_f; //Fundamental matrix
+	~CameraParameters();
 //public:
 //
 //	void setCM1(const Mat& cm1);

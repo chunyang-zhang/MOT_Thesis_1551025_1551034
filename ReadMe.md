@@ -1,6 +1,5 @@
-# Moving Object Tracking 
+# Object Tracking on a Moving Platform
 
-## OpenCV 4.1
 ### Requirement:
 #### OpenCV 4.1
 Download OpenCV 4.0
@@ -48,7 +47,8 @@ Download OpenCV 4.0
 + Inside linker>General  
     Copy the path to include the folder containing lib folder inside Additional Include Directories: C:\opencv\build\install\x64\vc16\lib
 + Input  
-    Edit Input > Additional Dependencies and paste the .lib file' name eg. opencv_xfeatures2d410d.lib, opencv_features2d410d.lib
+    Edit Input > Additional Dependencies and paste the .lib file' name eg. In this project we use:  
+    opencv_world410d.lib;opencv_xfeatures2d410d.lib;opencv_features2d410d.lib;opencv_tracking410d.lib
     
 #### Boost Library
 + Download: https://dl.bintray.com/boostorg/release/1.70.0/source/
