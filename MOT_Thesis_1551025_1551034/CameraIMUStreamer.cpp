@@ -76,12 +76,12 @@ bool CameraIMUStreamer::read(CamerasIMUFrame::Ptr &frame)
 	//Release old Frame
 	frame->releaseFrame();
 
-	frame->mainFrame = mainImg;
-	frame->preMainFrame = preMainImg;
-	frame->subFrame = subImg;
-	//mainImg.copyTo(frame->mainFrame);
-	//preMainImg.copyTo(frame->preMainFrame);
-	//subImg.copyTo(frame->subFrame);
+	//frame->mainFrame = mainImg;
+	//frame->preMainFrame = preMainImg;
+	//frame->subFrame = subImg;
+	mainImg.copyTo(frame->mainFrame);
+	preMainImg.copyTo(frame->preMainFrame);
+	subImg.copyTo(frame->subFrame);
 	//Divide based on frame numbers
 	//FPS = 25 but = 40?
 	if (frameCounter % Config::priFPS == 0)
