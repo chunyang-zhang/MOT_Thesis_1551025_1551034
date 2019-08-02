@@ -141,7 +141,6 @@ void DroneSlam::updateLocalMapStereo(Point3DVector& point3D, vector<float>& allQ
 
 Point3D DroneSlam::calculateFeaturePos(const Point3D& firstCameraPos, const Point3D& firstObsv, const Point3D& secondCameraPos, const Point3D& secondObsv, float& quality, Mat3x3& R)
 {
-	//Havent understand yet
 	// calculate unrotated feature observation
 	Point3D firstU, secondU;
 	firstU = R * firstObsv;
@@ -197,8 +196,6 @@ Point3D DroneSlam::calculateCameraPose(FeatureStorageVector& localMap, Point3D& 
 	vector <float> distanceOfFeature;
 
 	Point3DVector p3D_OfFeature;
-	int nStereo = 0;
-	int nMono = 0;
 	for (int i = 0; i < size; i++)
 	{
 		//if current  local Map is stereo
@@ -212,7 +209,6 @@ Point3D DroneSlam::calculateCameraPose(FeatureStorageVector& localMap, Point3D& 
 
 			// 3D point of feature
 			p3D_OfFeature.push_back(localMap[i].featurePoseStereo);
-			nStereo++;
 		}
 		else//Mono Pose
 		{
@@ -225,7 +221,6 @@ Point3D DroneSlam::calculateCameraPose(FeatureStorageVector& localMap, Point3D& 
 
 				//! 3D point of feature
 				p3D_OfFeature.push_back(localMap[i].featurePoseMono);
-				nMono++;
 			}
 		}
 	}
@@ -271,13 +266,13 @@ Point3D DroneSlam::calculateCameraPose(FeatureStorageVector& localMap, Point3D& 
 	currCameraPos = ransac2PCameraPose(allA, allAxp, allObsVector, p3D_OfFeature, resultInliers);
 
 	//For Each feature local map, init Inliers = false, 
-	for (int i = 0; i < localMap.size(); i++)
+	for (size_t i = 0; i < localMap.size(); i++)
 	{
 		localMap[i].isInliers = false;
 		localMap[i].nOutliers++;
 	}
 	//check the valid inliers and update it. in local map (feature storage)
-	for (int i = 0; i < resultInliers.size(); i++)
+	for (size_t i = 0; i < resultInliers.size(); i++)
 	{
 
 		localMap[featuresHave3D[resultInliers[i]]].isInliers = true;
@@ -288,6 +283,274 @@ Point3D DroneSlam::calculateCameraPose(FeatureStorageVector& localMap, Point3D& 
 	numOfInliers = resultInliers.size();
 
 	return currCameraPos;
+}
+
+Point3D DroneSlam::calculate3DObjectPos(const FeatureStorageVector& localMap, const Point3D& cameraPos, vector<int>& pInsideBoxIndex, Point3DVector& points3DInsideBox)
+{
+
+	//Vector Store the distance from feature pose - preCamera pose
+	vector <float> distanceOfFeature;
+	points3DInsideBox.clear();
+	float distance;
+	for (int i = 0; i < pInsideBoxIndex.size(); i++)
+	{
+		//if current  local Map is stereo
+		if (localMap[pInsideBoxIndex[i]].isStereoPose)
+		{
+
+			// calculate d = ||R(t-1) - Wpi ||
+
+			distance = (localMap[pInsideBoxIndex[i]].featurePoseStereo - cameraPos).norm();
+			distanceOfFeature.push_back(distance);
+
+			// 3D point of feature
+			points3DInsideBox.push_back(localMap[pInsideBoxIndex[i]].featurePoseStereo);
+		}
+		else//Mono Pose
+		{
+			if (localMap[pInsideBoxIndex[i]].isMonoPose)
+			{
+				// calculate d = || p - (r)t-1 ||
+				distance = (localMap[pInsideBoxIndex[i]].featurePoseMono - cameraPos).norm();
+				distanceOfFeature.push_back(distance);
+
+				//! 3D point of feature
+				points3DInsideBox.push_back(localMap[pInsideBoxIndex[i]].featurePoseMono);
+			}
+		}
+	}
+	//Using IQR to remove outliers of distance
+	if (pInsideBoxIndex.size() > 1)
+	{
+		removeOutliersIQR(pInsideBoxIndex, distanceOfFeature, points3DInsideBox);
+	}
+	Point3D objectPosition = Point3D(0, 0, 0);
+	for (size_t i = 0;i < points3DInsideBox.size();i++)
+	{
+		objectPosition = objectPosition + points3DInsideBox[i];
+	}
+	objectPosition /= points3DInsideBox.size();
+	return objectPosition;
+}
+
+void DroneSlam::removeOutliersIQR(vector<int>& pInsideBoxIndex, vector<float>& distanceOfFeature, Point3DVector& p3DOfFeature)
+{
+	//sort the distance of feature along with the Index of it
+	sortPointByDistance(pInsideBoxIndex, distanceOfFeature, p3DOfFeature,0,pInsideBoxIndex.size()-1);
+	int n = pInsideBoxIndex.size();
+	int m;
+	int q1;
+	int q3;
+	float IQR;
+	float Q1;
+	float Q3;
+	float leftB;
+	float rightB;
+	if (n % 2 == 0)
+	{
+		m = n / 2;
+		if (m % 2 == 0)
+		{
+			q1 = m / 2;
+			q3 = m + q1;
+			Q1 = (distanceOfFeature[q1 - 1] + distanceOfFeature[q1]) / 2;
+			Q3 = (distanceOfFeature[q3 - 1] + distanceOfFeature[q3]) / 2;
+
+		}
+		else
+		{
+			q1 = (m + 1) / 2;
+			q3 = m + q1;
+			Q1 = distanceOfFeature[q1 - 1];
+			Q3 = distanceOfFeature[q3 - 1];
+		}
+	}
+	else
+	{
+		m = (n + 1) / 2;
+		if (m % 2 == 0)
+		{
+			q1 = m / 2;
+			q3 = m + q1;
+			Q1 = distanceOfFeature[q1 - 1];
+			Q3 = distanceOfFeature[q3 - 1];
+		}
+		else
+		{
+			q1 = m / 2;
+			q3 = m + q1;
+			Q1 = (distanceOfFeature[q1 - 1] + distanceOfFeature[q1]) / 2;
+			Q3 = (distanceOfFeature[q3 - 1] + distanceOfFeature[q3]) / 2;
+
+		}
+	}
+	IQR = Q3 - Q1;
+	leftB = Q1 - 1.5 * IQR;
+	rightB = Q3 + 1.5 * IQR;
+	//remove outlier by IQR
+	size_t i = 0;
+	while (i < pInsideBoxIndex.size())
+	{
+		if (distanceOfFeature[i] < leftB|| distanceOfFeature[i] > rightB)
+		{
+			distanceOfFeature.erase(distanceOfFeature.begin() + i);
+			pInsideBoxIndex.erase(pInsideBoxIndex.begin() + i);
+			p3DOfFeature.erase(p3DOfFeature.begin() + i);
+		}
+		else
+		{
+			i++;
+		}
+	}
+}
+
+void DroneSlam::sortPointByDistance(vector<int>& pInsideBoxIndex, vector<float>& distanceOfFeature, Point3DVector& p3DOfFeature,int low, int high)
+{
+	int i = low;
+	int j = high;
+	float pivot = distanceOfFeature[(low + high) / 2];
+	while(i<j)
+	{
+		while (distanceOfFeature[i] < pivot)
+		{
+			i++;
+		}
+		while (distanceOfFeature[j] > pivot)
+		{
+			j--;
+		}
+		if (i <= j)
+		{
+			swap(distanceOfFeature[i], distanceOfFeature[j]);
+			swap(pInsideBoxIndex[i], pInsideBoxIndex[j]);
+			swap(p3DOfFeature[i], p3DOfFeature[j]);
+			i++;
+			j--;
+		}
+		
+	}
+	if (low < j)
+	{
+		sortPointByDistance(pInsideBoxIndex, distanceOfFeature, p3DOfFeature, low, j);
+	}
+	if (i < high)
+	{
+		sortPointByDistance(pInsideBoxIndex, distanceOfFeature, p3DOfFeature, i, high);
+	}
+}
+
+void DroneSlam::getBoundingBox3DWCS(const Point3DVector& p3DOfFeature, Point3DVector& bbox3D)
+{
+	bbox3D.clear();
+	float minX, maxX;
+	minX =maxX = p3DOfFeature[0].x();
+	float minY, maxY;
+	minY = maxY = p3DOfFeature[0].y();
+	float minZ, maxZ;
+	minZ = maxZ = p3DOfFeature[0].z();
+	float x, y, z;//point 3D
+	for (size_t i = 1;i < p3DOfFeature.size();i++)
+	{
+		x = p3DOfFeature[i].x();
+		y = p3DOfFeature[i].y();
+		z = p3DOfFeature[i].z();
+		if (x > maxX)
+		{
+			maxX = x;
+		}
+		if(x < minX)
+		{
+			minX = x;
+		}
+		if (y > maxY)
+		{
+			maxY = y;
+		}
+		if (y < minY)
+		{
+			minY = y;
+		}
+		if (z > maxZ)
+		{
+			maxZ = z;
+		}
+		if (z < minZ)
+		{
+			minZ = z;
+		}
+	}
+	//1
+	bbox3D.push_back(Point3D(minX, maxY, minZ));
+	//2
+	bbox3D.push_back(Point3D(minX, maxY, maxZ));
+	//3
+	bbox3D.push_back(Point3D(maxX, maxY, maxZ));
+	//4
+	bbox3D.push_back(Point3D(maxX, maxY, minZ));
+	//5
+	bbox3D.push_back(Point3D(minX, minY, minZ));
+	//6
+	bbox3D.push_back(Point3D(minX, minY, maxZ));
+	//7
+	bbox3D.push_back(Point3D(maxX, minY, maxZ));
+	//8
+	bbox3D.push_back(Point3D(maxX, minY, minZ));
+
+}
+
+void DroneSlam::convert3DBoxto2DBox(const Point3DVector& bbox3D, vector<cv::Point2f>& box2D, const Mat3x3& R,const int& imgWidth,const int& imgHeight)
+{
+	box2D.clear();
+	Point2f tmpPoint;
+	for (size_t i = 0;i < bbox3D.size();i++)
+	{
+		computePixelCoordinates(bbox3D[i],R,2,2,imgWidth,imgHeight,tmpPoint);
+		box2D.push_back(tmpPoint);
+	}
+}
+
+void DroneSlam::draw2DBoundingBox(Mat& image, vector<cv::Point2f>& box2D)
+{
+	Scalar color = (0, 255, 255);
+	int thickness = 2;
+	line(image, box2D[0], box2D[1], color, thickness);
+	line(image, box2D[0], box2D[3], color, thickness);
+	line(image, box2D[0], box2D[4], color, thickness);
+	line(image, box2D[1], box2D[2], color, thickness);
+	line(image, box2D[1], box2D[5], color, thickness);
+	line(image, box2D[2], box2D[3], color, thickness);
+	line(image, box2D[2], box2D[6], color, thickness);
+	line(image, box2D[3], box2D[7], color, thickness);
+	line(image, box2D[4], box2D[5], color, thickness);
+	line(image, box2D[4], box2D[7], color, thickness);
+	line(image, box2D[5], box2D[6], color, thickness);
+	line(image, box2D[6], box2D[7], color, thickness);
+
+}
+
+bool DroneSlam::computePixelCoordinates(const Point3D& pWorld, const Mat3x3& cameraToWorld, const float& canvasWidth, const float& canvasHeight, const int& imgWidth, const int& imgHeight, Point2f& pPixel)
+{
+	//compute the inverse of cameraToWorld
+	Point3D pCamera;
+	Mat3x3 worldToCamera = cameraToWorld.inverse();
+	pCamera = worldToCamera * pWorld;
+	//Coordinates of the point on the canva
+	Point2f pScreen;
+	pScreen.x = pCamera.x() / -pCamera.z();
+	pScreen.y = pCamera.y() / -pCamera.z();
+
+	//check with the canvas width and height, if the x or y coordinate absolute value is
+	//greater than the canvas size, the point is not visible.
+	if (abs(pScreen.x) > canvasWidth || abs(pScreen.y) > canvasHeight)
+		return false;
+	//Normalized coordinate will in range [0,1]
+	Point2f pNDC;
+	pNDC.x = (pScreen.x + canvasWidth / 2) / canvasWidth;
+	pNDC.y = (pScreen.y + canvasHeight / 2) / canvasHeight;
+	//Convert to pixel coordiante
+	pPixel.x = floor(pNDC.x * imgWidth);
+	pPixel.y = floor((1 - pNDC.y) * imgHeight);
+	return true;
 }
 
 Point3D DroneSlam::ransac2PCameraPose(const Mat3x3Vector& allA, const Point3DVector& allAxp, const Point3DVector& ObsVectors, const Point3DVector& p3DFeature, vector<int>& resultInliers)
@@ -402,14 +665,14 @@ void DroneSlam::computeErrAndInliers(const Point3D& cameraPose, const Mat3x3Vect
 
 Point3D DroneSlam::computePose(const Mat3x3Vector& allA, const Point3DVector& allAxp, const vector<int>& points)
 {
-	int sizeP = points.size();
+	size_t sizeP = points.size();
 
 	// sum of A for all points
 	Mat3x3 A = Mat3x3::Zero();
 	Point3D Axp = Point3D(0, 0, 0);
 	//Sum of all A
 	//Sum of ALL A x world point
-	for (int i = 0; i < sizeP; i++)
+	for (size_t i = 0; i < sizeP; i++)
 	{
 		A += allA[points[i]];
 		Axp += allAxp[points[i]];
@@ -737,9 +1000,54 @@ bool DroneSlam::readAllIMU()
 	return true;
 }
 
+Point3D DroneSlam::convertFromCameraToWorld(const Point3D& camPos, const Mat3x3& cameraToWorld)
+{
+	return cameraToWorld * camPos;
+}
+
+OutputPose DroneSlam::getOutputPose()
+{
+	return outputPose;
+}
+
+OutputTracking DroneSlam::getTrackingResult()
+{
+	return trackingResult;
+}
+
+vector<TrackingGroundTruth> DroneSlam::getObjectLocalizationResult()
+{
+	return objectLocalizationResult;
+}
+
+void DroneSlam::setGroundTruthValue(vector<TrackingGroundTruth> groundTruthValue)
+{
+	groundTruthList = groundTruthValue;
+}
+
+void DroneSlam::setTrackingMethod(string trackingMethod)
+{
+	this->trackingMethod = trackingMethod;
+}
+
+void DroneSlam::setRunningMethod(string runMethod)
+{
+	this->runMethod = runMethod;
+}
+
+bool DroneSlam::getIsTracked()
+{
+	return isTracked;
+}
+
+bool DroneSlam::getNoTracked()
+{
+	return noTracked;
+}
+
 string float2string(float& number)
 {
-	std::ostringstream buff;
+	ostringstream buff;
 	buff << number;
 	return buff.str();
 }
@@ -755,17 +1063,188 @@ void DroneSlam::processFrame()
 	Size winSize(10, 10);
 	int numInliers = 0;
 	float roll, pitch, yaw;
+
 	//! run Img streamer thread
 	thread thread_Img_stream(&CameraIMUStreamer::threadReadImg, this->stream);
+
+	//Detection parameters
+	BoundingBox currBoundingBox;
+	Rect2d bbox;
+	Rect processBounding;
+	BoundingBoxHelper boxHelper;
+	BoundingBox croppedBoxResult;
+	Rect originalBoundingBox;
+	Mat detectFrame;
+	bool checkDetect = false;
+	float ratio = 2.0f;
+	int left, top, right, bottom;
+	int firstDetectedId = 0;
+	float ratioThreshold = 0.55f;
+	int countLost = 0;
+	vector<int> pInsideBoxIndex;
+	vector<float>featureDistances;
+	vector<BoundingBox> bboxList;
+	//Object Pos
+	Point3D objectPos;
+	//Point3DVector bbox3D;
+	Point3DVector points3DInsideBox;
+	//vector<Point2f> pointsImage3DBox;
+	//Descriptor Matrix
+	Mat descriptor1;
+	Mat descriptor2;
+	//groundTruth Value
+	Mat image;
+	Mat groundTruthMat;
+	Mat preBBoxFrame;
+
+
+	//GroundTruthResult
+	string gtName;
+	Rect gtBBox;
+	Point3D gtPos;
+	int gtId;
+	int countIoU75 = 0;
+	int countIoU50 = 0;
+	int countObjPos = 0;
+
+	//tracking result
+	//IoU and AED of Pos
+	float iou50 = 0;
+	float iou75 = 0;
+	float error = 0;
+	int countTracking = 0;
+	int countProcessTime = 0;
+	float trackingTime = 0;
+	//Output value 
+	//Time, Number of Pic, Distance, Velocity, MSEx, MSEy,MSEz
+	float time = 0;
+	int numPics = stream->getNumFrames();
+	float distance;
+	float velocity;
+	float avgFeatureTime = 0;
+	float xMSE = 0;
+	float yMSE = 0;
+	float zMSE = 0;
+	float aedCamPos;
+	//Object Pose Error Result
+	float aedPos = 0;
+	float MSEPosx = 0;
+	float MSEPosy = 0;
+	float MSEPosz = 0;
+
+	time = getTotalProcessTime();
+	distance = getTotalDistance();
+	velocity = distance / time;
+	cout << "Time" << time << endl;
+	cout << "Distance: " << distance << endl;
+	cout << "Velocity: " << velocity << endl;
+	cout << "Num of Pics: " << numPics << endl;
+
+	outputPose.setTime(time);
+	outputPose.setDistance(distance);
+	outputPose.setNumPics(numPics);
+	outputPose.setVelocity(velocity);
+	//Testing Tracker CSRT
+	Ptr<Tracker> tracker = TrackerCSRT::create();
+
+	bool validReadFrame;
+	//important only start tracking when meet this frame and so on
+	int startTrackingFrame = groundTruthList[0].getFrameId();
+	bool startTracking = false;
+	string name;
+	if (trackingMethod.compare("IoUMatching")==0)
+	{
+		name = "IoU + Image Matching";
+	}
+	else
+	{
+		name = trackingMethod;
+	}
 	//sleep 1 s
 	this_thread::sleep_for(std::chrono::milliseconds(1000));
 	while (1)
 	{
+		pInsideBoxIndex.clear();
+		checkDetect = false;
+		countProcessTime++;
 		if (!isReinstall)
 		{
 			// camera streamer read frame
-			if (stream == NULL || !stream->read(frame)) return;
 
+			validReadFrame = stream->read(frame);
+			if (runMethod.compare("demo") == 0 && frame->id == groundTruthList.size() + startTrackingFrame)
+			{
+				startTracking = false;
+			}
+			if (stream == NULL || !(validReadFrame) ||(runMethod.compare("test") == 0 && frame->id == groundTruthList.size() + startTrackingFrame))
+			{
+				cout << "Finish Tracking Object" << endl;
+				//Output Error Pose
+				xMSE /= errPose.size();
+				yMSE /= errPose.size();
+				zMSE /= errPose.size();
+				avgFeatureTime /= (double)CLOCKS_PER_SEC;
+				avgFeatureTime /= countProcessTime;
+				aedCamPos = getAED();
+				outputPose.setErrorPose(Point3D(xMSE, yMSE, zMSE));
+				outputPose.setAED(aedCamPos);
+				outputPose.setAvgFeatureTime(avgFeatureTime);
+				
+				//Output iou tracking
+				iou50 = 1.0* countIoU50 / groundTruthList.size();
+				iou75 = 1.0* countIoU75 / groundTruthList.size();
+				trackingTime /= (double)CLOCKS_PER_SEC;
+				trackingTime /= countTracking;
+				trackingResult.setIoU50(iou50);
+				trackingResult.setIoU75(iou75);
+				trackingResult.setObjectName(objectDetection->getNameOfClass(firstDetectedId));
+				trackingResult.setTime(trackingTime);
+				trackingResult.setId(gtId);
+
+				//Object Pose Error
+				if (countObjPos > 0)
+				{
+					aedPos /= countObjPos;
+					MSEPosx /= countObjPos;
+					MSEPosy /= countObjPos;
+					MSEPosz /= countObjPos;
+					//cout << "AED pos: " << aedPos << endl;
+					//cout << "MSE Pos x: " << MSEPosx << endl;
+					//waitKey(0);
+					outputObjPose.setId(gtId);
+					outputObjPose.setAED(aedPos);
+					outputObjPose.setErrPose(Point3D(MSEPosx, MSEPosy, MSEPosz));
+					outputObjPose.setName(objectDetection->getNameOfClass(firstDetectedId));
+					outputObjPose.setIsEmpty(false);
+				}
+				else
+				{
+					outputObjPose.setIsEmpty(true);
+				}
+				//stop tracking, only continue camera localization
+				//startTracking = false;
+				isTracked = true;
+				stream->setStopTrack(isTracked);
+				//Release Matrix
+				if (!preBBoxFrame.empty())
+				{
+					preBBoxFrame.release();
+				}
+				if (!detectFrame.empty())
+				{
+					detectFrame.release();
+				}
+				break;
+			}
+			if (startTracking)
+			{
+				int frameCount = frame->id - startTrackingFrame;
+				if (frameCount < groundTruthList.size())
+				{
+					gtBBox = groundTruthList[frameCount].getBoundingBox();
+					gtPos = groundTruthList[frameCount].getObjectPos();
+				}
+			}
 			// IMU streamer
 
 			double time;
@@ -776,8 +1255,8 @@ void DroneSlam::processFrame()
 			lastRPY.roll = roll;
 			lastRPY.yaw = yaw;
 			lastRPY.timestamp = time;
-			cout << "Time:"<<time<<"\n R = " << roll << " ,P = " << pitch << "  ,Y = " << yaw <<endl;
-			
+			cout << "Time:" << time << endl;
+			cout<<"R = " << roll << ", P = " << pitch << ", Y = " << yaw <<endl;
 			// RW2I
 			Mat3x3 R = keyPointConversion.RPY2Rotation(roll, pitch, yaw);
 
@@ -805,13 +1284,14 @@ void DroneSlam::processFrame()
 			}
 			else
 			{
-				cout << endl << "=====================================================================";
+				cout << endl << "====================================================================="<<endl;
 				isReinstall = false;
 			}
 
 			Mat mask = Mat::zeros(frame->mainFrame.size(), CV_8UC1);  // type of mask is CV_8U
 			Mat roi(mask, cv::Rect(50, 50, 1142, 275));
 			roi = Scalar(255);
+			clock_t start = clock();
 
 			//! Shi-Tomasi conners for stereo corresponding  Ok
 			vector<KeyPoint> keyPoints1 = detectAndTracker->detectKeyPoints(frame->mainFrame, mask);
@@ -825,19 +1305,25 @@ void DroneSlam::processFrame()
 			keyCurrP = keyPointConversion.KeyPoint2Point2f(keyPoints2);
 			cornerSubPix(frame->subFrame, keyCurrP, Size(10, 10), Size(-1, -1), termcrit);
 			keyPoints2 = keyPointConversion.Point2f2KeyPoint(keyCurrP);
-
 			// BRIEF description
-			Mat descriptor1 = detectAndTracker->computeDescriptors(frame->mainFrame, keyPoints1);
-			Mat descriptor2 = detectAndTracker->computeDescriptors(frame->subFrame, keyPoints2);
+			//convert to bgr for  lucid
+			//cvtColor(frame->mainFrame, frameColor, COLOR_GRAY2BGR);
+			//cvtColor(frame->subFrame, subFrameColor, COLOR_GRAY2BGR);
+
+			//Mat descriptor1 = detectAndTracker->computeDescriptors(frameColor, keyPoints1);
+			//Mat descriptor2 = detectAndTracker->computeDescriptors(subFrameColor, keyPoints2);
+			descriptor1 = detectAndTracker->computeDescriptors(frame->mainFrame, keyPoints1);
+			descriptor2 = detectAndTracker->computeDescriptors(frame->subFrame, keyPoints2);
 
 			// Brute Force matcher
 			vector<DMatch> matches = detectAndTracker->matchTwoImage(descriptor1, descriptor2);
-
+			avgFeatureTime += clock() - start;
 
 			// reject outlier by epipolar constraints
 			vector<DMatch> stereoMatches;
 			stereoMatches = detectAndTracker->rejectStereoOutliers(keyPoints1, keyPoints2, matches, stream->getCamParams().F_f);
-			cout <<"Size of Stereo Matches"<< stereoMatches.size() << endl;
+			cout <<"Size of Stereo Matches: "<< stereoMatches.size() << endl;
+			
 			//Reject outliers draw
 			//Mat output;
 			//drawMatches(frame->mainFrame, keyPoints1, frame->subFrame, keyPoints2, stereoMatches, output);
@@ -850,29 +1336,9 @@ void DroneSlam::processFrame()
 			Point3DVector point3Dstereo;
 			point3Dstereo = triangulateStereo->myTriangulatePoints(keyPoints1, keyPoints2, stereoMatches, all_quality);
 			
-			//Show 3D points
-			//int size_of_stereo = point3Dstereo.size();
-			//cout << "Size of Stereo Points: " << size_of_stereo << endl;
-			//Mat outputZ = frame->mainFrame;
-			//vector <KeyPoint> tmpKeyP;
-
-			//for (int ik = 0; ik < size_of_stereo; ik++)
-			//{
-			//	tmpKeyP.push_back(keyPoints1[stereoMatches[ik].queryIdx]);
-			//	drawKeypoints(outputZ, tmpKeyP, outputZ);
-			//	float x = point3Dstereo[ik][0];
-			//	float y = point3Dstereo[ik][1];
-			//	float z = point3Dstereo[ik][2];
-
-			//	string out = "("+float2string(x) + ", " +float2string(y) + ", " + float2string(z) + ")";
-			//	putText(outputZ, out, keyPoints1[stereoMatches[ik].queryIdx].pt, 1, 1, Scalar(0, 0, 255));
-			//	tmpKeyP.pop_back();
-			//	//
-			//	cout<< endl<< "HERE"<<keyPoints1[stereoMatches[ik].queryIdx].pt<< "\t" << point3Dstereo[ik].transpose();
-			//}
-			//imshow("Z", outputZ);
-			//waitKey(0);
-			
+			//Show 3D points max min
+			int size_of_stereo = point3Dstereo.size();
+			cout << "Size of Stereo Points: " << size_of_stereo << endl;
 
 
 			// add all points detect camera primary to local map
@@ -882,7 +1348,63 @@ void DroneSlam::processFrame()
 			// save last feature for next tracking
 			vector <Point2f> currKeyP;
 			currKeyP = keyPointConversion.KeyPoint2Point2f(keyPoints1);
-			swap(currKeyP, prevKeyP);
+			//Object Detection
+			//first detected for full frame
+			image = frame->mainFrame;
+			cvtColor(image, image, CV_GRAY2RGB);
+
+			if (frame->id ==startTrackingFrame)
+			{
+				//cout << "Class ID:" << firstDetectedId << endl;
+				int frameCount = frame->id - startTrackingFrame;
+				if (frameCount < groundTruthList.size())
+				{
+					gtBBox = groundTruthList[frameCount].getBoundingBox();
+					gtPos = groundTruthList[frameCount].getObjectPos();
+					gtId = groundTruthList[frameCount].getId();
+				}
+				groundTruthMat = image(gtBBox);
+				bool checkValue = objectDetection->objectDetect(groundTruthMat);
+				if (!checkValue)
+				{
+					isTracked = false;
+					stream->setCanTrack(false);
+					break;
+				}
+				currBoundingBox = objectDetection->getBestBoundingBox();
+				firstDetectedId = currBoundingBox.getClassId();
+				if (firstDetectedId == 7 || firstDetectedId == 6)
+				{
+					firstDetectedId = 2;
+					currBoundingBox.setClassId(firstDetectedId);
+				}
+				if(firstDetectedId == 1)
+				{
+					firstDetectedId = 0;
+					currBoundingBox.setClassId(firstDetectedId);
+				}
+				currBoundingBox.setRegion(gtBBox);
+				originalBoundingBox = boxHelper.normalizeCroppedBox(currBoundingBox.getRegion(),image.cols,image.rows);
+				left = originalBoundingBox.x;
+				top = originalBoundingBox.y;
+				right = originalBoundingBox.x + originalBoundingBox.width;
+				bottom = originalBoundingBox.y + originalBoundingBox.height;
+				countIoU50++;
+				countIoU75++;
+				checkDetect = true;
+				if (trackingMethod.compare("IoU") != 0)
+				{
+					if (!preBBoxFrame.empty())
+					{
+						preBBoxFrame.release();
+					}
+					preBBoxFrame = image(originalBoundingBox).clone();
+				}
+				startTracking = true;
+			}
+
+			swap(prevKeyP, currKeyP);
+			//clear point
 		}
 		else //next tracking frame
 		{
@@ -900,20 +1422,295 @@ void DroneSlam::processFrame()
 				Mat roi(mask, cv::Rect(50, 50, 1142, 275));
 				roi = Scalar(255);
 
-				//! tracking by KLT
+				// tracking by KLT
 				calcOpticalFlowPyrLK(frame->preMainFrame, frame->mainFrame, prevKeyP, currKeyP, status, err, winSize, 3, termcrit, 0, 0.001);
-				Mat colorFrame;
-				Mat image = frame->mainFrame;
+				image = frame->mainFrame;
+				//Detection with only the surrounding bounding box regions.
 				cvtColor(image, image, CV_GRAY2RGB);
-				objectDetection->objectDetect(image);
+				if (frame->id == startTrackingFrame)
+				{
+					//get ground truth value at firt detect
+					int frameCount = frame->id - startTrackingFrame;
+					if (frameCount < groundTruthList.size())
+					{
+						gtId = groundTruthList[frameCount].getId();
+						gtBBox = groundTruthList[frameCount].getBoundingBox();
+						gtPos = groundTruthList[frameCount].getObjectPos();
+					}
 
 
-				objectDetection->drawPrediction(image);
+					groundTruthMat = image(gtBBox);
+					bool checkValue = objectDetection->objectDetect(groundTruthMat);
+					if (!checkValue)
+					{
+						isTracked = false;
+						stream->setCanTrack(isTracked);
+						break;
+					}
+					currBoundingBox = objectDetection->getBestBoundingBox();
+					firstDetectedId = currBoundingBox.getClassId();
+					if (firstDetectedId == 7 || firstDetectedId == 6)
+					{
+						firstDetectedId = 2;
+						currBoundingBox.setClassId(firstDetectedId);
+					}
+					if (firstDetectedId == 1)
+					{
+						firstDetectedId = 0;
+						currBoundingBox.setClassId(firstDetectedId);
+					}
+					currBoundingBox.setRegion(gtBBox);
+					originalBoundingBox = boxHelper.normalizeCroppedBox(currBoundingBox.getRegion(), image.cols, image.rows);
+					left = originalBoundingBox.x;
+					top = originalBoundingBox.y;
+					right = originalBoundingBox.x + originalBoundingBox.width;
+					bottom = originalBoundingBox.y + originalBoundingBox.height;
+					countIoU50++;
+					countIoU75++;
+					checkDetect = true;
+					if (trackingMethod.compare("IoU") != 0)
+					{
+						if (!preBBoxFrame.empty())
+						{
+							preBBoxFrame.release();
+						}
+						preBBoxFrame = image(originalBoundingBox).clone();
+					}
+					startTracking = true;
+				}
+				if (startTracking)
+				{
+					//draw groundtruth box not matter
+
+					objectDetection->drawPrediction(gtBBox, image, Scalar(0, 0, 255));
+
+					Rect bRect = currBoundingBox.getRegion();
+					////If the output is none
+					////Increase the ratio of processing bounding box -> 1.2 1.4
+
+					//get small surrounding frame
+					if (countLost >= 2 && (trackingMethod.compare("IoU") != 0))
+					{
+						cout << "Perform Image Matching for full frame!" << endl;
+						processBounding = Rect(0, 0, image.cols, image.rows);
+					}
+					else
+					{
+						processBounding = boxHelper.getNewBoundingBox(bRect, ratio, image.rows, image.cols);
+					}
+					//Surrounding Object For Detection
+
+					detectFrame = image(processBounding);
+					//Tracking
+					//bool ok = tracker->update(image, bbox);
+					//Detect
+					checkDetect = objectDetection->objectDetect(detectFrame);
+					int btmText = image.rows - 10;
+
+					//IoU
+					if (checkDetect)
+					{
+						cout << "Successfully detected" << endl;
+						countTracking++;
+						clock_t startTrack = clock();
+						//get box with the same class Id with the original and also best IoU with original boundingbox
+						if (countLost < 2 &&(trackingMethod.compare("IoU") == 0 || trackingMethod.compare("IoUMatching") == 0))
+						{
+							cout << "Perform IoU" << endl;
+							checkDetect = objectDetection->getRelatedBoundingBox(firstDetectedId, bRect, processBounding, croppedBoxResult);
+						}
+						else
+						{
+							checkDetect = false;
+						}
+						if (trackingMethod.compare("IoUMatching") == 0)
+						{
+							//check full frame for occlusion
+							if ((checkDetect && countLost>=2)|| !checkDetect)
+							{
+
+								objectDetection->getAllBoundingBox(bboxList);
+								cout << "Perform matching since IoU not working" << endl;
+								int boxIndex = imageMatching->getBoundingBoxImageMatching(preBBoxFrame, detectFrame, firstDetectedId, bboxList);
+								if (boxIndex == -1)
+								{
+									checkDetect = false;
+								}
+								else
+								{
+									croppedBoxResult = bboxList[boxIndex];
+									checkDetect = true;
+								}
+							}
+						}
+						if (trackingMethod.compare("ImageMatching") == 0)
+						{
+							cout << "Perform Image Matching" << endl;
+							objectDetection->getAllBoundingBox(bboxList);
+							int boxIndex = imageMatching->getBoundingBoxImageMatching(preBBoxFrame, detectFrame, firstDetectedId, bboxList);
+							if (boxIndex == -1)
+							{
+								checkDetect = false;
+							}
+							else
+							{
+								croppedBoxResult = bboxList[boxIndex];
+								checkDetect = true;
+							}
+						}
+						trackingTime += clock() - startTrack;
+					}
+					if (checkDetect)
+					{
+						cout << "Successfully Detect a Object" << endl;
+						if (trackingMethod.compare("ImageMatching") != 0)
+						{
+							if (countLost >= 2)
+							{
+								countLost = 1;
+							}
+							objectDetection->setIoUThreshold(1 / pow(ratioThreshold, countLost));
+						}
+						//Convert to original size
+						//width height the same
+						originalBoundingBox = boxHelper.normalizeCroppedBox(boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y), image.cols, image.rows);
+						currBoundingBox.setRegion(originalBoundingBox);
+						countLost = 0;
+						left = originalBoundingBox.x;
+						top = originalBoundingBox.y;
+						right = originalBoundingBox.x + originalBoundingBox.width;
+						bottom = originalBoundingBox.y + originalBoundingBox.height;
+						if (trackingMethod.compare("IoU") != 0)
+						{
+							//save frame for next track
+							if (!preBBoxFrame.empty())
+							{
+								preBBoxFrame.release();
+							}
+							preBBoxFrame = image(originalBoundingBox).clone();
+						}
+						float iouResult = objectDetection->calculateIoU(originalBoundingBox,gtBBox);
+						if (iouResult >= 0.5)
+						{
+							countIoU50++;
+						}
+						if (iouResult >= 0.75)
+						{
+							countIoU75++;
+						}
+						Point2f point;
+						for (int k = 0; k < currKeyP.size(); k++)
+						{
+							if (!status[k])
+								continue;
+							////Green Color
+							point = currKeyP[k];
+							if (localMap[k].isStereoPose || localMap[k].isMonoPose)
+							{
+								if (checkDetect)
+								{
+									if (point.x > left && point.x<right && point.y>top && point.y < bottom)
+									{
+										pInsideBoxIndex.push_back(k);
+
+									}
+								}
+							}
+						}
+						//Compute 3D object Pos
+
+						//get 3D box from points 3D
+						//getBoundingBox3DWCS(points3DInsideBox, bbox3D);
+						//convert from 3D WCS to 2D Image
+						//convert3DBoxto2DBox(bbox3D, pointsImage3DBox, currR, image.cols, image.rows);
+						for (size_t i = 0;i < pInsideBoxIndex.size();i++)
+						{
+							circle(image, currKeyP[pInsideBoxIndex[i]], 5, Scalar(255, 0, 0), 2, 4);
+
+						}
+						//draw2DBoundingBox(image, pointsImage3DBox);
+
+							//Calculate object Pos
+						if (pInsideBoxIndex.size() != 0)
+						{
+							countObjPos++;
+							objectPos = calculate3DObjectPos(localMap, cameraPos.back(), pInsideBoxIndex, points3DInsideBox);
+							cout << "3D object Pos: " << objectPos.x() << " " << objectPos.y() << " " << objectPos.z() << endl;
+							gtPos = convertFromCameraToWorld(gtPos, currR);
+							//minus from camera Pos
+							//objectPos = objectPos - cameraPos.back();
+							error = (objectPos - gtPos).norm();
+							aedPos += error;
+							Point3D err_p;
+							for (int i = 0; i < 3; i++)
+							{
+								err_p[i] = abs(objectPos[i] - gtPos[i]);
+							}
+							MSEPosx += pow(err_p[0], 2);
+							MSEPosy += pow(err_p[1], 2);
+							MSEPosz += pow(err_p[2], 2);
+							//output the object pos to file
+							stream->outObjectPose << frame->id << " " << gtId << " " << objectDetection->getNameOfClass(firstDetectedId) << " " << left << " " << top << " " << right - left << " " << bottom - top << " " << objectPos.x() << " " << objectPos.y() << " " << objectPos.z() << endl;
+							cout << "Object AED error: " << error << endl;
+						}
+
+						//Draw Predict
+						objectDetection->drawPrediction(currBoundingBox.getClassId(), currBoundingBox.getConfidence(), left, top, right, bottom, Scalar(25, 255, 0), image);
+						//Draw Object Pose
+						string objPosText = "Obj Pose (" + roundValue(objectPos.x(), 4) + ", " + roundValue(objectPos.y(), 4) + ", " + roundValue(objectPos.z(), 4) + ")";
+						putText(image, objPosText, Point(25, btmText), 1, 1.5, Scalar(0, 137, 255), 2, 2);
+
+					}
+					//keep the same bounding box if cant not find any.
+					else
+					{
+						cout << "Fail to detect a object" << endl;
+						//reduce iou for next tracking
+						if (trackingMethod.compare("ImageMatching") != 0 && countLost < 1)
+						{
+							objectDetection->setIoUThreshold(ratioThreshold);
+						}
+						Rect prevBBox = currBoundingBox.getRegion();
+						left = prevBBox.x;
+						top = prevBBox.y;
+						right = prevBBox.x + prevBBox.width;
+						bottom = prevBBox.y + prevBBox.height;
+						countLost++;
+						//If the third time it lost => lost the object
+					}
+
+					if (countLost >= 2)
+					{
+						cout << "Lost the object" << endl;
+					}
+
+					
+
+
+					putText(image, "Ground Truth", Point(25, btmText - 25), 1, 1.5, Scalar(0, 0, 255), 2, 2);
+					putText(image, name + " + YOLO", Point(25, btmText - 50), 1, 1.5, Scalar(25, 255, 0), 2, 2);
+					//Object Pos Text
+				}
+
+
+				Point2f point;
 				for (int k = 0; k < currKeyP.size(); k++)
 				{
 					if (!status[k])
 						continue;
-					//Green COlor
+					////Green Color
+					/*point = currKeyP[k];
+					if (localMap[k].isStereoPose || localMap[k].isMonoPose)
+					{
+						if (checkDetect)
+						{
+							if (point.x > left && point.x<right && point.y>top && point.y < bottom)
+							{
+								pInsideBoxIndex.push_back(k);
+
+							}
+						}
+					}*/
 					if (localMap[k].isStereoPose)
 					{
 						circle(image, currKeyP[k], 3, Scalar(0, 255, 0), -1, 8);
@@ -937,11 +1734,20 @@ void DroneSlam::processFrame()
 					if (localMap[k].isInliers && (localMap[k].isStereoPose || localMap[k].isMonoPose))
 					{
 						circle(image, currKeyP[k], 5, Scalar(255, 255, 255), 2, 4);
+						
 					}
+					
 				}
 
-				string RPYtext = "(" + to_string(roll) + ", " + to_string(pitch) + ", " + to_string(yaw) + ")";
-				putText(image, RPYtext, Point(50, 50), 1, 2, Scalar(100, 255, 0), 2, 2);
+				
+				//Camera Pose Text
+				string camPos = "Cam Pose (" + roundValue(cameraPos.back().x(), 4) + ", " + roundValue(cameraPos.back().y(), 4)+ ", "+ roundValue(cameraPos.back().z(), 4)+ ")";
+				string RPYtext = "RPY (" + roundValue(roll, 4) + ", " + roundValue(pitch, 4) + ", " + roundValue(yaw, 4) + ")";
+
+				putText(image, RPYtext, Point(25, 25), 1, 1.5, Scalar(0, 0, 255), 2, 2);
+				putText(image, camPos, Point(25, 50), 1, 1.5,Scalar(0, 255, 0), 2, 2);
+
+				//Object Pos Text
 				imshow("Tracker", image);
 				waitKey(1);
 			
@@ -985,21 +1791,16 @@ void DroneSlam::processFrame()
 				{
 					count++;
 					curr_CameraPos = calculateCameraPose(localMap, cameraPos.back(), numInliers);
-					if (count > 10)
+					if (count > 30)
 					{
 						localMap.clear();
 						currKeyP.clear();
+						pInsideBoxIndex.clear();
 						isReinstall = true;
 						break;
 					}
 
 				}
-				if (isReinstall)
-				{
-					swap(prevKeyP, currKeyP);
-					continue;
-				}
-				//waitKey(0);
 
 				//! new camera pose
 				cameraPos.push_back(curr_CameraPos);
@@ -1012,9 +1813,13 @@ void DroneSlam::processFrame()
 					err_p[i] = abs(curr_CameraPos[i] - GPSPose[frame->id][i]);
 				}
 				errPose.push_back(err_p);
+				xMSE += pow(err_p[0],2);
+				yMSE += pow(err_p[1],2);
+				zMSE += pow(err_p[2],2);
+				
 				//print error
 				cout<<("\nERROR = :\t\t %f %f %f \n\n\n", err_p[0], err_p[1], err_p[2]);
-				circle(result1, Point(curr_CameraPos[0], curr_CameraPos[1] + 150), 1, Scalar(0, 255, 0), 1, 8);
+				circle(result1, Point(curr_CameraPos[0], curr_CameraPos[1] +150), 1, Scalar(0, 255, 0), 1, 8);
 				//result2.at<Vec3b>(Point(frame->id*2, (curr_CameraPos[0]-gps_pose[frame->id][0])*10+150)) = Vec3b(0, 255, 0);
 				stream->outGPSandPose << curr_CameraPos[0] << "," << curr_CameraPos[1] << "," << curr_CameraPos[2] << endl;
 				imshow("result", result1);
@@ -1040,17 +1845,17 @@ void DroneSlam::processFrame()
 							map.push_back(ik);
 						}
 					}
+					clock_t start = clock();
 					// already have keyPoint for Primary img, detect keyPoint for Secondary img
 					//keyP1 = Point2f2KeyPoint(currKeyP);
 					keyP2 = detectAndTracker->detectKeyPoints(frame->subFrame, mask);
+					//convert to bgr for  lucid
 
-					// compute BRIEF description
-					Mat descriptor1 = detectAndTracker->computeDescriptors(frame->mainFrame, keyP1);
-					Mat descriptor2 = detectAndTracker->computeDescriptors(frame->subFrame, keyP2);
-
+					descriptor1 = detectAndTracker->computeDescriptors(frame->mainFrame, keyP1);
+					descriptor2 = detectAndTracker->computeDescriptors(frame->subFrame, keyP2);
 					// matcher
 					vector<DMatch> matches = detectAndTracker->matchTwoImage(descriptor1, descriptor2);
-
+					avgFeatureTime += clock() - start;
 					// reject outlier by epipolar constrains
 					vector<DMatch> stereoMatches;
 					stereoMatches = detectAndTracker->rejectStereoOutliers(keyP1, keyP2, matches, stream->getCamParams().F_f);
@@ -1063,10 +1868,11 @@ void DroneSlam::processFrame()
 					////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 					// calculate features pose from stereo
+
 					Point3DVector point3Dstereo;
 					vector <float> all_quality;
 					point3Dstereo = triangulateStereo->myTriangulatePoints(keyP1, keyP2, stereoMatches, all_quality);
-
+					
 					//Move to world coordinate and update map
 					updateLocalMapStereo(point3Dstereo, all_quality, stereoMatches, currR, cameraPos.back(), map);
 
@@ -1080,6 +1886,7 @@ void DroneSlam::processFrame()
 					{
 						float quality;
 						Point3D featurePoint;
+						//Error some time occur here
 						featurePoint = calculateFeaturePos(cameraPos[localMap[k].firstFrameID], localMap[k].featureObservation.front(), cameraPos[frame->id], localMap[k].featureObservation.back(), quality, allR[localMap[k].firstFrameID]);
 						if (quality > Config::threshQualityFeature && !cvIsInf(quality))
 						{
@@ -1138,11 +1945,40 @@ void DroneSlam::processFrame()
 				swap(prevKeyP, currKeyP);
 			}
 			std::cout << endl << "printfTOTAL: " << (std::clock() - start) / (double)CLOCKS_PER_SEC << '\n';
-
 		}
+		if (!image.empty())
+		{
+			image.release();
+		}
+		if (!descriptor1.empty())
+		{
+			descriptor1.release();
+		}
+		if (!descriptor2.empty())
+		{
+			descriptor2.release();
+		}
+		if (!groundTruthMat.empty())
+		{
+			groundTruthMat.release();
+		}
+		if (!detectFrame.empty())
+		{
+			detectFrame.release(); //take care here release Previous frame and keep new frame
+		}
+
 	}
 	thread_Img_stream.join();
 	//IMU_thread.join();
+
+}
+
+void DroneSlam::setDetectDescriptorMethod(string detector, string descriptor)
+{
+	if (detectAndTracker)
+	{
+		detectAndTracker->setDetectDescriptorMethod(detector, descriptor);
+	}
 }
 
 void DroneSlam::drawGPSResult(Mat& result)
@@ -1166,11 +2002,120 @@ void DroneSlam::drawGPSResult(Mat& result)
 	file.close();
 }
 
-DroneSlam::DroneSlam()
+
+void DroneSlam::findFeaturePoints(Point3DVector& pointsInside2DBox, Rect boundingBox)
+{
+	//A point inside the dimension of a 2D bounding box
+	// Only investigate the x,y dimension
+	int left = boundingBox.x;
+	int top = boundingBox.y;
+	int right = boundingBox.x + boundingBox.width;
+	int bottom = boundingBox.y + boundingBox.height;
+	int size = localMap.size();
+	for (int i = 0;i < size;i++)
+	{
+		if (localMap[i].isInliers)
+		{
+			
+		}
+	}
+
+
+	//Point3DVector p3D_OfFeature;
+	//int nStereo = 0;
+	//int nMono = 0;
+	//for (int i = 0; i < size; i++)
+	//{
+	//	//if current  local Map is stereo
+	//	if (localMap[i].isStereoPose)
+	//	{
+
+	//		// calculate d = ||R(t-1) - Wpi ||
+	//		featuresHave3D.push_back(i);
+	//		float tmp = (localMap[i].featurePoseStereo - preCameraPos).norm();
+	//		distanceOfFeature.push_back(tmp);
+
+	//		// 3D point of feature
+	//		p3D_OfFeature.push_back(localMap[i].featurePoseStereo);
+	//		nStereo++;
+	//	}
+	//	else//Mono Pose
+	//	{
+	//		if (localMap[i].isMonoPose)
+	//		{
+	//			// calculate d = || p - (r)t-1 ||
+	//			featuresHave3D.push_back(i);
+	//			float tmp = (localMap[i].featurePoseMono - preCameraPos).norm();
+	//			distanceOfFeature.push_back(tmp);
+
+	//			//! 3D point of feature
+	//			p3D_OfFeature.push_back(localMap[i].featurePoseMono);
+	//			nMono++;
+	//		}
+	//	}
+	//}
+}
+
+float DroneSlam::getTotalProcessTime()
+{
+	float time = 0;
+	for (size_t i = 0; i < allRPY.size() - 1;i++)
+	{
+		if (allRPY[i].timestamp < 60 && allRPY[i].timestamp>59 && allRPY[i + 1].timestamp < 1 && allRPY[i + 1].timestamp>0)
+		{
+			time+= allRPY[i + 1].timestamp+60 - allRPY[i].timestamp;
+		}
+		else
+		{
+			time += allRPY[i+1].timestamp - allRPY[i].timestamp;
+		}
+	}
+	return time;
+}
+
+float DroneSlam::getTotalDistance()
+{
+	float distance = 0.f;
+	for (size_t i = 0;i < GPSPose.size() - 1;i++)
+	{
+		Point3D pose = GPSPose[i + 1] - GPSPose[i];
+		distance += pose.norm();
+	}
+	return distance;
+}
+
+string DroneSlam::roundValue(float value, int decimal)
+{
+	stringstream stream;
+	stream << fixed << setprecision(decimal) << value;
+	string s = stream.str();
+	return s;
+}
+
+
+OutputObjectPose DroneSlam::getOutputObjectPose()
+{
+	return outputObjPose;
+}
+
+
+float DroneSlam::getAED()
+{
+	float result = 0;
+	for(size_t i = 0; i<errPose.size();i++)
+	{
+		result += errPose[i].norm();
+	}
+	result /= errPose.size(); 
+	return result;
+}
+
+
+DroneSlam::DroneSlam(string outCamPose, string outObjectPose)
 {
 	//streamer from Cameras and IMU
 	//get information of camera parameter
-	stream = new CameraIMUStreamer();
+	stream = new CameraIMUStreamer(outCamPose,outObjectPose);
 	stream->connect();
 	//init Stereo Triangulate with Camera Params
 	triangulateStereo = new StereoTriangulate(stream->getCamParams());
@@ -1184,6 +2129,8 @@ DroneSlam::DroneSlam()
 
 	//Detector
 	objectDetection = new YOLOObjectDetection();
+	//imageMatching
+	imageMatching = new ImageMatching();
 	// initial RPY
 	lastRPY.roll = lastRPY.pitch = lastRPY.yaw = 180;
 
@@ -1196,6 +2143,9 @@ DroneSlam::DroneSlam()
 	drawGPSResult(result1);
 
 	isReinstall = false;
+
+	isTracked = false;
+	noTracked = false;
 }
 
 DroneSlam::~DroneSlam()
@@ -1203,4 +2153,9 @@ DroneSlam::~DroneSlam()
 	delete objectDetection;
 	delete detectAndTracker;
 	delete triangulateStereo;
+	delete imageMatching;
+	//release matrix
+	result1.release();
+	result2.release();
+	result3.release();
 }

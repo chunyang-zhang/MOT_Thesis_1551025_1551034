@@ -1,13 +1,13 @@
 #include "CameraIMUStreamer.h"
 using namespace cv;
-CameraIMUStreamer::CameraIMUStreamer() {
+CameraIMUStreamer::CameraIMUStreamer(string outputCamPos, string outputObjectPos) {
 	StereoCalibration stereoCabInfo;
 	//read the stereo info for calibrating
 	stereoCabInfo.readCalibrateInfo(camParams);
 	//cout << camParams.cm1 << endl;
 	initUndistortRectifyMap(camParams.cm1, camParams.d1, camParams.r1, camParams.p1, Size(CAMERA_1_HEIGHT, CAMERA_1_WIDTH), CV_32FC1, camParams.map1x, camParams.map1y);
 	initUndistortRectifyMap(camParams.cm2, camParams.d2, camParams.r2, camParams.p2, Size(CAMERA_2_HEIGHT, CAMERA_2_WIDTH), CV_32FC1, camParams.map2x, camParams.map2y);
-	frameCounter = 0;// should put it static?
+	frameCounter = 0;
 	imgStreamId = 0;
 	//init rpy at t0
 	rollT0 = 0;
@@ -16,7 +16,8 @@ CameraIMUStreamer::CameraIMUStreamer() {
 	//enable IMU stream
 	turnIMUStream = 1;
 	//output gps and pose
-	outGPSandPose.open("all_pose.txt");
+	outGPSandPose.open(outputCamPos);
+	outObjectPose.open(outputObjectPos);
 
 }
 bool CameraIMUStreamer::connect()
@@ -27,6 +28,8 @@ bool CameraIMUStreamer::connect()
 	//String pathTime = "./";
 	//String pathTimeStamps = "";
 	//load whole images folder
+	canTrack = true;
+	stopTrack = false;
 	glob(pathL, fn1, false);
 	glob(pathR, fn2, false);
 	if (fn1.size() <= 0 || fn2.size() <= 0)
@@ -58,6 +61,10 @@ void CameraIMUStreamer::disconnect()
 
 bool CameraIMUStreamer::read(CamerasIMUFrame::Ptr &frame)
 {
+	if (frameCounter >= numFrames)
+	{
+		return false;
+	}
 	while (imgStreamId == frameCounter)
 	{
 		cout << "wait Thread!" << endl;
@@ -66,6 +73,12 @@ bool CameraIMUStreamer::read(CamerasIMUFrame::Ptr &frame)
 	frame->id = frameCounter;
 	frame->timestamp = time;
 	//Save curr main + sub Img
+	//Release old Frame
+	frame->releaseFrame();
+
+	//frame->mainFrame = mainImg;
+	//frame->preMainFrame = preMainImg;
+	//frame->subFrame = subImg;
 	mainImg.copyTo(frame->mainFrame);
 	preMainImg.copyTo(frame->preMainFrame);
 	subImg.copyTo(frame->subFrame);
@@ -92,7 +105,26 @@ void CameraIMUStreamer::threadReadImg()
 			cout << "Finish!" << endl;
 			//close position file
 			outGPSandPose.close();
-			exit(0);
+			outObjectPose.close();
+			break;
+		}
+		if (!canTrack)
+		{
+			cout << "Finish!" << endl;
+			//close position file
+			outGPSandPose.close();
+			outObjectPose.close();
+
+			break;
+		}
+		if (stopTrack)
+		{
+				cout << "Finish!" << endl;
+				//close position file
+				outGPSandPose.close();
+				outObjectPose.close();
+
+				break;
 		}
 		if (imgStreamId == frameCounter) 
 		{
@@ -125,6 +157,30 @@ void CameraIMUStreamer::threadReadImg()
 			//imshow("Temp1", mainImg);
 			//imshow("Temp2", subImg);
 			imgStreamId++;
+			tmp1.release();
+			tmp2.release();
 		}
 	}
+}
+
+void CameraIMUStreamer::setStopTrack(bool stopTrack)
+{
+	this->stopTrack = stopTrack;
+}
+
+void CameraIMUStreamer::setCanTrack(bool canTrack)
+{
+	this->canTrack = canTrack;
+}
+
+int CameraIMUStreamer::getNumFrames()
+{
+	return numFrames;
+}
+
+CameraIMUStreamer::~CameraIMUStreamer()
+{
+	mainImg.release();
+	preMainImg.release();
+	subImg.release();
 }

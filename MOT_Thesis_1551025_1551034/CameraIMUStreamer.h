@@ -30,17 +30,24 @@ private:
 	double time;
 	int imgStreamId;
 	bool turnIMUStream;
-
+	bool canTrack;
+	bool stopTrack;
 public: 
 
 	// Inherited via InputStreamer
-	 bool connect() ;
+	bool connect() ;
 
-	 void disconnect() ;
+	void disconnect() ;
 
-	 bool read(CamerasIMUFrame::Ptr &frame) ;
-	CameraIMUStreamer();
+	bool read(CamerasIMUFrame::Ptr &frame) ;
+	CameraIMUStreamer(string outputCamPos,string outputObjectPos);
 	void threadReadImg();
 	ofstream outGPSandPose;
+	ofstream outObjectPose;
+
+	void setStopTrack(bool stopTrack);
+	void setCanTrack(bool canTrack);
+	int getNumFrames();
+	~CameraIMUStreamer();
 };
 

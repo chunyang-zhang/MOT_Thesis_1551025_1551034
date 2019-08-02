@@ -9,13 +9,23 @@ class FeatureDetectTrack
 private:
 	//cv smart pointer to deallocate memory
 	cv::Ptr<cv::Feature2D> detector;
-	//cv::Ptr<SURF> detector;
-	//cv::Ptr<BriefDescriptorExtractor> descriptor;
-
+	cv::Ptr<StarDetector>starDetector;
+	cv::Ptr<BriefDescriptorExtractor> briefDescriptor;
+	cv::Ptr<DAISY> daisyDescriptor;
+	cv::Ptr<cv::AgastFeatureDetector> agastDetector;
+	cv::Ptr<cv::MSER> mserDetector;
+	cv::Ptr<LATCH> latchDescriptor;
 	cv::Ptr<cv::Feature2D> descriptor;
+	cv::Ptr<FREAK> freakDescriptor;
 	cv::Ptr<cv::DescriptorMatcher> matcher;
+	cv::Ptr<cv::ORB> orb;
+	cv::Ptr<cv::FastFeatureDetector> fastDetector;
+	cv::Ptr<cv::BRISK> brisk;
+	string detectM;
+	string descriptM;
 public:
 	FeatureDetectTrack();
+	void setDetectDescriptorMethod(string detectM, string descriptM);
 	//detect Key Points from image
 	vector<cv::KeyPoint> detectKeyPoints(const cv::Mat& img, const cv::Mat& mask);
 	
