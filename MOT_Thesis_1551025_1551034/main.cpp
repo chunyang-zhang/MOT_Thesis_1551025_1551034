@@ -43,10 +43,9 @@ int main(int argc, char** argv) {
 		cout << "Your argument list is out of range!" << endl;
 		return 0;
 	}
-	cout << "HERE" << endl;
 	vector<TrackingGroundTruth> groundTruthList;
+	vector<vector<TrackingGroundTruth>>groundTruthOrderList;
 	LoadLabelResult labelResult;
-	vector<vector<TrackingGroundTruth>> groundTruthOrderList;
 	string det;
 	string des;
 	string matchingMethod;
@@ -109,10 +108,9 @@ int main(int argc, char** argv) {
 		chosenDescriptor = argv[4];
 
 	}
-	cout << "Value"<<trackingMethod << endl;
 	if (trackingMethod.compare("all")==0)
 	{
-		trackingMethodVector =  { "ImageMatching", "IoU","IoUMatching" };
+		trackingMethodVector =  { "IoUMatching", "IoU","ImageMatching" };
 	}
 	else {
 		trackingMethodVector.push_back(trackingMethod);
@@ -164,6 +162,7 @@ int main(int argc, char** argv) {
 			delete slam;
 
 		}
+		cout << "Finish Processing - Write to file!" << endl;
 		//out tracking result of 1 method
 		outputAllTracking.setOutputTrackingList(outputTrackingList);
 		ofstream fout(outTrackingResultTmp);

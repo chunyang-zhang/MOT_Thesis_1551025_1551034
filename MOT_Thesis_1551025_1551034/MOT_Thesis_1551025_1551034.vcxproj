@@ -133,6 +133,8 @@
     <ClCompile Include="BoundingBox3D.cpp" />
     <ClCompile Include="BoundingBoxHelper.cpp" />
     <ClCompile Include="CameraIMUStreamer.cpp" />
+    <ClCompile Include="CameraParamters.cpp" />
+    <ClCompile Include="CamerasIMUFrame.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="DroneSlam.cpp" />
     <ClCompile Include="FeatureDetectTrack.cpp" />

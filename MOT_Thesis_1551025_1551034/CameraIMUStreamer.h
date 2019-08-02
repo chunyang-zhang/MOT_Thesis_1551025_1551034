@@ -48,5 +48,6 @@ public:
 	void setStopTrack(bool stopTrack);
 	void setCanTrack(bool canTrack);
 	int getNumFrames();
+	~CameraIMUStreamer();
 };
 

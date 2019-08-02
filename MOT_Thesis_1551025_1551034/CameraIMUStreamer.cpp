@@ -73,9 +73,15 @@ bool CameraIMUStreamer::read(CamerasIMUFrame::Ptr &frame)
 	frame->id = frameCounter;
 	frame->timestamp = time;
 	//Save curr main + sub Img
-	mainImg.copyTo(frame->mainFrame);
-	preMainImg.copyTo(frame->preMainFrame);
-	subImg.copyTo(frame->subFrame);
+	//Release old Frame
+	frame->releaseFrame();
+
+	frame->mainFrame = mainImg;
+	frame->preMainFrame = preMainImg;
+	frame->subFrame = subImg;
+	//mainImg.copyTo(frame->mainFrame);
+	//preMainImg.copyTo(frame->preMainFrame);
+	//subImg.copyTo(frame->subFrame);
 	//Divide based on frame numbers
 	//FPS = 25 but = 40?
 	if (frameCounter % Config::priFPS == 0)
@@ -151,6 +157,8 @@ void CameraIMUStreamer::threadReadImg()
 			//imshow("Temp1", mainImg);
 			//imshow("Temp2", subImg);
 			imgStreamId++;
+			tmp1.release();
+			tmp2.release();
 		}
 	}
 }
@@ -168,4 +176,11 @@ void CameraIMUStreamer::setCanTrack(bool canTrack)
 int CameraIMUStreamer::getNumFrames()
 {
 	return numFrames;
+}
+
+CameraIMUStreamer::~CameraIMUStreamer()
+{
+	mainImg.release();
+	preMainImg.release();
+	subImg.release();
 }

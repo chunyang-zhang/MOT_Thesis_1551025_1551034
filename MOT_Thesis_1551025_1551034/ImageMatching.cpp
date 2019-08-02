@@ -71,6 +71,14 @@ int ImageMatching::getBoundingBoxImageMatching(const cv::Mat& preBBoxFrame, cons
 	{
 		objectFrame.release();
 	}
+	if (!descriptor1.empty())
+	{
+		descriptor1.release();
+	}
+	if (!descriptor2.empty())
+	{
+		descriptor2.empty();
+	}
 	return -1;
 }
 

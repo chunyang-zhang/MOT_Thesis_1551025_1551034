@@ -18,4 +18,6 @@ public:
 	float yaw;
 	//smart pointer of boost
 	typedef boost::shared_ptr<CamerasIMUFrame> Ptr;
+	void releaseFrame();
+	~CamerasIMUFrame();
 };

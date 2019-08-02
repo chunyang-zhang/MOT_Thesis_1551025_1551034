@@ -1084,12 +1084,19 @@ void DroneSlam::processFrame()
 	vector<int> pInsideBoxIndex;
 	vector<float>featureDistances;
 	vector<BoundingBox> bboxList;
-	Mat preBBoxFrame;
 	//Object Pos
 	Point3D objectPos;
 	//Point3DVector bbox3D;
 	Point3DVector points3DInsideBox;
 	//vector<Point2f> pointsImage3DBox;
+	//Descriptor Matrix
+	Mat descriptor1;
+	Mat descriptor2;
+	//groundTruth Value
+	Mat image;
+	Mat groundTruthMat;
+	Mat preBBoxFrame;
+
 
 	//GroundTruthResult
 	string gtName;
@@ -1299,16 +1306,14 @@ void DroneSlam::processFrame()
 			cornerSubPix(frame->subFrame, keyCurrP, Size(10, 10), Size(-1, -1), termcrit);
 			keyPoints2 = keyPointConversion.Point2f2KeyPoint(keyCurrP);
 			// BRIEF description
-			Mat frameColor;
-			Mat subFrameColor;
 			//convert to bgr for  lucid
 			//cvtColor(frame->mainFrame, frameColor, COLOR_GRAY2BGR);
 			//cvtColor(frame->subFrame, subFrameColor, COLOR_GRAY2BGR);
 
 			//Mat descriptor1 = detectAndTracker->computeDescriptors(frameColor, keyPoints1);
 			//Mat descriptor2 = detectAndTracker->computeDescriptors(subFrameColor, keyPoints2);
-			Mat descriptor1 = detectAndTracker->computeDescriptors(frame->mainFrame, keyPoints1);
-			Mat descriptor2 = detectAndTracker->computeDescriptors(frame->subFrame, keyPoints2);
+			descriptor1 = detectAndTracker->computeDescriptors(frame->mainFrame, keyPoints1);
+			descriptor2 = detectAndTracker->computeDescriptors(frame->subFrame, keyPoints2);
 
 			// Brute Force matcher
 			vector<DMatch> matches = detectAndTracker->matchTwoImage(descriptor1, descriptor2);
@@ -1345,7 +1350,7 @@ void DroneSlam::processFrame()
 			currKeyP = keyPointConversion.KeyPoint2Point2f(keyPoints1);
 			//Object Detection
 			//first detected for full frame
-			Mat image = frame->mainFrame;
+			image = frame->mainFrame;
 			cvtColor(image, image, CV_GRAY2RGB);
 
 			if (frame->id ==startTrackingFrame)
@@ -1358,7 +1363,7 @@ void DroneSlam::processFrame()
 					gtPos = groundTruthList[frameCount].getObjectPos();
 					gtId = groundTruthList[frameCount].getId();
 				}
-				Mat groundTruthMat = image(gtBBox);
+				groundTruthMat = image(gtBBox);
 				bool checkValue = objectDetection->objectDetect(groundTruthMat);
 				if (!checkValue)
 				{
@@ -1419,7 +1424,7 @@ void DroneSlam::processFrame()
 
 				// tracking by KLT
 				calcOpticalFlowPyrLK(frame->preMainFrame, frame->mainFrame, prevKeyP, currKeyP, status, err, winSize, 3, termcrit, 0, 0.001);
-				Mat image = frame->mainFrame;
+				image = frame->mainFrame;
 				//Detection with only the surrounding bounding box regions.
 				cvtColor(image, image, CV_GRAY2RGB);
 				if (frame->id == startTrackingFrame)
@@ -1434,7 +1439,7 @@ void DroneSlam::processFrame()
 					}
 
 
-					Mat groundTruthMat = image(gtBBox);
+					groundTruthMat = image(gtBBox);
 					bool checkValue = objectDetection->objectDetect(groundTruthMat);
 					if (!checkValue)
 					{
@@ -1494,10 +1499,7 @@ void DroneSlam::processFrame()
 						processBounding = boxHelper.getNewBoundingBox(bRect, ratio, image.rows, image.cols);
 					}
 					//Surrounding Object For Detection
-					if (!detectFrame.empty())
-					{
-						detectFrame.release(); //take care here release Previous frame and keep new frame
-					}
+
 					detectFrame = image(processBounding);
 					//Tracking
 					//bool ok = tracker->update(image, bbox);
@@ -1849,8 +1851,8 @@ void DroneSlam::processFrame()
 					keyP2 = detectAndTracker->detectKeyPoints(frame->subFrame, mask);
 					//convert to bgr for  lucid
 
-					Mat descriptor1 = detectAndTracker->computeDescriptors(frame->mainFrame, keyP1);
-					Mat descriptor2 = detectAndTracker->computeDescriptors(frame->subFrame, keyP2);
+					descriptor1 = detectAndTracker->computeDescriptors(frame->mainFrame, keyP1);
+					descriptor2 = detectAndTracker->computeDescriptors(frame->subFrame, keyP2);
 					// matcher
 					vector<DMatch> matches = detectAndTracker->matchTwoImage(descriptor1, descriptor2);
 					avgFeatureTime += clock() - start;
@@ -1943,7 +1945,26 @@ void DroneSlam::processFrame()
 				swap(prevKeyP, currKeyP);
 			}
 			std::cout << endl << "printfTOTAL: " << (std::clock() - start) / (double)CLOCKS_PER_SEC << '\n';
-
+		}
+		if (!image.empty())
+		{
+			image.release();
+		}
+		if (!descriptor1.empty())
+		{
+			descriptor1.release();
+		}
+		if (!descriptor2.empty())
+		{
+			descriptor2.release();
+		}
+		if (!groundTruthMat.empty())
+		{
+			groundTruthMat.release();
+		}
+		if (!detectFrame.empty())
+		{
+			detectFrame.release(); //take care here release Previous frame and keep new frame
 		}
 
 	}
@@ -2134,5 +2155,7 @@ DroneSlam::~DroneSlam()
 	delete triangulateStereo;
 	delete imageMatching;
 	//release matrix
-
+	result1.release();
+	result2.release();
+	result3.release();
 }
