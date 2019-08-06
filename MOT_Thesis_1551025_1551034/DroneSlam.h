@@ -18,6 +18,8 @@
 #include"TrackingGroundTruth.h"
 #include "OutputTracking.h"
 #include "OutputObjectPose.h"
+#include "TrackingStrategy.h"
+#include "TrackingController.h"
 #pragma comment(lib,"ws2_32.lib") //Winsock Library
 
 class DroneSlam
@@ -154,6 +156,8 @@ private:
 	//round value for display
 	string roundValue(float value, int decimal);
 
+	//get ground truth value for tracking
+	bool getGroundTruthForTracking(int startTrackingFrame, cv::Mat& image, int& firstDetectedId, TrackingGroundTruth& trackingGroundTruth, BoundingBox& currBBox);
 
 public:
 	DroneSlam(string outCamPose,string outObjectPose);

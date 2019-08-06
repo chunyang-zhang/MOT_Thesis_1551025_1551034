@@ -16,6 +16,7 @@ private:
 	static cv::String modelConfiguration; 
 	static cv::String modelWeights; 
 	cv::dnn::Net net;
+	
 	// Remove bounding box with low confidence using non-maxima suppression
 	//output frame and outs bounding boxes
 	void postprocess(cv::Mat& frame, const vector<cv::Mat>& outs);

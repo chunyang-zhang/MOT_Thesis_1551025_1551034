@@ -11,7 +11,6 @@
 using namespace cv;
 int main(int argc, char** argv) {
 	//Argument
-	int counter;
 	cout<<"Program Name Is: %s"<< argv[0]<<endl;
 	if (argc == 1)
 		cout << "No Extra Command Line Argument Passed. Used Default Set Up" << endl;
@@ -110,7 +109,7 @@ int main(int argc, char** argv) {
 	}
 	if (trackingMethod.compare("all")==0)
 	{
-		trackingMethodVector =  { "IoUMatching", "IoU","ImageMatching" };
+		trackingMethodVector =  { "ImageMatching",  "IoUMatching","IoU", };
 	}
 	else {
 		trackingMethodVector.push_back(trackingMethod);

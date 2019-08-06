@@ -1,6 +1,11 @@
 #include "OutputPose.h"
 
 
+OutputPose::OutputPose():
+velocity(0.0f),time(0.0f),numPics(0),isEmpty(true),distance(0.0f),avgFeatureTime(0.0f),aed(0.0f)
+{
+}
+
 void OutputPose::setTime(float t)
 {
 	time = t;

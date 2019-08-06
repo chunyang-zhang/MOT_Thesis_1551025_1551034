@@ -14,6 +14,7 @@ private:
 	float aed;
 	bool isEmpty;
 public:
+	OutputPose();
 	//Set value
 	void setTime(float t);
 	void setNumPics(int numP);

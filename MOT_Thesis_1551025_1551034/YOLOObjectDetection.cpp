@@ -34,6 +34,11 @@ bool YOLOObjectDetection::objectDetect (Mat& output)
 	{
 		return false;
 	}
+	blob.release();
+	for (size_t i = 0;i < outs.size();i++)
+	{
+		outs[i].release();
+	}
 	return true;
 
 }
@@ -55,7 +60,8 @@ void YOLOObjectDetection::getAllBoundingBox(vector<BoundingBox>& bboxList)
 		}
 	}
 }
-bool YOLOObjectDetection::getRelatedBoundingBox(int classId, const Rect& bRect, const Rect& processedBounding, BoundingBox &bb)
+bool YOLOObjectDetection::getRelatedBoundingBox(int classId, const Rect& bRect
+	, const Rect& processedBounding, BoundingBox &bb)
 {
 
 	int idx;
@@ -227,6 +233,7 @@ void YOLOObjectDetection::drawPrediction(cv::Mat& output, Scalar color)
 
 	}
 }
+
 
 void YOLOObjectDetection::setIoUThreshold(float iouRatio)
 {
