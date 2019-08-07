@@ -11,7 +11,9 @@ protected:
 	int firstDetectedId;
 	float ratio;
 public:
+	~TrackingStrategy();
+	TrackingStrategy();
 	TrackingStrategy(int Id);
-	virtual bool update(const cv::Mat &image, cv::Rect& bbox) = 0;
+	virtual bool update(cv::Mat &image, cv::Rect& bbox) = 0;
 };
 

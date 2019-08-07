@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
 	}
 	if (trackingMethod.compare("all")==0)
 	{
-		trackingMethodVector =  { "ImageMatching",  "IoUMatching","IoU", };
+		trackingMethodVector =  { "Sort","ImageMatching",  "IoUMatching","IoU" };
 	}
 	else {
 		trackingMethodVector.push_back(trackingMethod);
@@ -141,6 +141,8 @@ int main(int argc, char** argv) {
 			isTracked = slam->getIsTracked();
 			if (!isTracked)
 			{
+				//fuck i never delete slam when continue.
+				delete slam;
 				continue;
 			}
 			outputPose = slam->getOutputPose();
@@ -173,37 +175,4 @@ int main(int argc, char** argv) {
 		outputAllPose.output(foutError);
 		outputObjectPoseList.clear();
 	}
-	//Test Detector Descriptor
-	/*for (size_t i = 0; i < detector.size();i++)
-	{
-		for (size_t j = 0; j < descriptor.size();j++)
-		{
-			if (detector[i].compare("fast") == 0 && descriptor[j].compare("brief") != 0)
-			{
-				continue;
-			}
-			if (detector[i].compare("orb") == 0 || detector[i].compare("brisk") == 0)
-			{
-				det = des = detector[i];
-			}
-			else
-			{
-				det = detector[i];
-				des = descriptor[j];
-			}
-			clock_t start = clock();
-			DroneSlam* slam = new DroneSlam(outCamPose, outObjectPose);
-			ofstream fout(outputFile);
-			OutputPose outputPose = slam->getOutputPose();
-
-			outputPose.output(fout);
-			if (detector[i].compare("orb") == 0 || detector[i].compare("brisk") == 0)
-			{
-				break;
-			}
-			cout << endl << "printf ALL TOTAL: " << (clock() - start) / (double)CLOCKS_PER_SEC << endl;
-
-		}
-	}*/
-	//waitKey(0);
 }

@@ -1,26 +1,29 @@
 #include "FeatureDetectTrack.h"
 using namespace cv;
 
+FeatureDetectTrack::~FeatureDetectTrack()
+{
+	
+}
+
 FeatureDetectTrack::FeatureDetectTrack()
 {
-	//Initialize GFTT detector
-	//detector =	GFTTDetector::create(Config::maxFeatureTrack,0.001,10);
-	//detector = cv::FastFeatureDetector::create(10, true);
-	//detector = SURF::create(300);
-	//havent init brief and brute force yet
-	//descriptor = xfeatures2d::BriefDescriptorExtractor::create();
-	//orb = ORB::create(Config::maxFeatureTrack);
-	//brisk = BRISK::create();
-	//akaze = AKAZE::create();
-	//detector = AgastFeatureDetector::create();
-	//detector = MSER::create();
-	//descriptor = DAISY::create();
-	//descriptor = FREAK::create();
-	//detector = StarDetector::create();
-	//descriptor = LUCID::create();
-	//descriptor = LATCH::create();
-	//init a matcher should test using KNN?
+	detector = NULL;
+	starDetector = NULL;
+	briefDescriptor = NULL;
+	daisyDescriptor = NULL;
+	agastDetector = NULL;
+	latchDescriptor = NULL;
+	descriptor = NULL;
+	freakDescriptor = NULL;
+	matcher = NULL;
+	orb = NULL;
+	brisk = NULL;
+	fastDetector = NULL;
+	
+	
 	matcher = BFMatcher::create();
+	
 	//flann based created
 	//matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
 
@@ -38,10 +41,6 @@ void FeatureDetectTrack::setDetectDescriptorMethod(string detectM, string descri
 	else if(detectM.compare("agast") ==0)
 	{
 		agastDetector = AgastFeatureDetector::create();
-	}
-	else if (detectM.compare("mser") == 0)
-	{
-		mserDetector = MSER::create();
 	}
 	else if (detectM.compare("star") == 0)
 	{
@@ -89,10 +88,6 @@ vector<cv::KeyPoint> FeatureDetectTrack::detectKeyPoints(const cv::Mat& img, con
 	else if (detectM.compare("agast") == 0)
 	{
 		agastDetector->detect(img, keyPoints, mask);
-	}
-	else if (detectM.compare("mser") == 0)
-	{
-		mserDetector->detect(img, keyPoints, mask);
 	}
 	else if (detectM.compare("star") == 0)
 	{
@@ -155,7 +150,7 @@ vector<DMatch> FeatureDetectTrack::matchTwoImage(const cv::Mat& desc1, const cv:
 	matcher->match(desc1, desc2, goodMatches);
 	//return matches of 2 descriptos
 	//return matches;
-	
+
 
 	//matcher->match(desc1, desc2, goodMatches);
 	//vector< vector<DMatch> > knn_matches;

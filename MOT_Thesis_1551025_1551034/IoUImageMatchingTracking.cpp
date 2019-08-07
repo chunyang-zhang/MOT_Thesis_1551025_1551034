@@ -12,15 +12,10 @@ IoUImageMatchingTracking::~IoUImageMatchingTracking()
 	{
 		delete imageMatching;
 	}
-	if(objectDetection!=NULL)
-	{ 
-		delete objectDetection;
-
-	}
 	preBBoxFrame.release();
 }
 
-bool IoUImageMatchingTracking::update(const cv::Mat& image, cv::Rect& bbox)
+bool IoUImageMatchingTracking::update(cv::Mat& image, cv::Rect& bbox)
 {
 	//Find bounding to track
 	//Full Frame Image matching
@@ -110,6 +105,7 @@ bool IoUImageMatchingTracking::update(const cv::Mat& image, cv::Rect& bbox)
 	{
 		cout << "Lost the object" << endl;
 	}
+	detectFrame.release();
 	return checkDetect;
 }
 

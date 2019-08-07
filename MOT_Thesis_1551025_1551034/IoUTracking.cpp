@@ -8,13 +8,10 @@ IoUTracking::IoUTracking(int firstDetectedId):TrackingStrategy(firstDetectedId),
 
 IoUTracking::~IoUTracking()
 {
-	if (objectDetection != NULL)
-	{
-		delete objectDetection;
-	}
+
 }
 
-bool IoUTracking::update(const cv::Mat& image, cv::Rect& bbox)
+bool IoUTracking::update( cv::Mat& image, cv::Rect& bbox)
 {
 
 	Rect processBounding;

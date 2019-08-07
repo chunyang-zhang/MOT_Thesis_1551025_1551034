@@ -13,7 +13,7 @@ public:
 	ImageMatchingTracking(const cv::Mat& preBBoxFrame,int firstDetectedId);
 	~ImageMatchingTracking();
 	// Inherited via TrackingStrategy
-	virtual bool update(const cv::Mat& image, cv::Rect& bbox ) override;
+	virtual bool update(cv::Mat& image, cv::Rect& bbox ) override;
 
 };
 

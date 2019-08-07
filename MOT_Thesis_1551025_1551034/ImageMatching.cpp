@@ -89,3 +89,19 @@ ImageMatching::ImageMatching()
 	matcher = BFMatcher::create();
 
 }
+
+ImageMatching::~ImageMatching()
+{
+	if(detector)
+	{ 
+		detector.release();
+	}
+	if (briefDescriptor)
+	{
+		briefDescriptor.release();
+	}
+	if (matcher)
+	{
+		matcher.release();
+	}
+}

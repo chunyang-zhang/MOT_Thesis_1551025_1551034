@@ -1165,6 +1165,7 @@ void DroneSlam::processFrame()
 			// camera streamer read frame
 
 			validReadFrame = stream->read(frame);
+			cout << "Frame ID: " << frame->id << endl;
 			if (runMethod.compare("demo") == 0 && frame->id == groundTruthList.size() + startTrackingFrame)
 			{
 				startTracking = false;
@@ -1223,6 +1224,7 @@ void DroneSlam::processFrame()
 				{
 					preBBoxFrame.release();
 				}
+				delete trackingStrategy;
 				break;
 			}
 			if (startTracking)
@@ -1352,7 +1354,8 @@ void DroneSlam::processFrame()
 				if (!isTracked)
 				{
 					stream->setCanTrack(false);
-					return;
+					delete trackingStrategy;
+					break;
 				}
 				//Set up first bounding box
 
@@ -1367,8 +1370,8 @@ void DroneSlam::processFrame()
 				countIoU75++;
 				checkDetect = true;
 
-				preBBoxFrame = image(originalBoundingBox).clone();
-				trackingStrategy = trackingController.selectTrackingStrategy(trackingMethod, preBBoxFrame, firstDetectedId);
+				preBBoxFrame = image(originalBoundingBox);
+				trackingStrategy = trackingController.selectTrackingStrategy(trackingMethod, preBBoxFrame, originalBoundingBox, firstDetectedId);
 				startTracking = true;
 			}
 
@@ -1404,7 +1407,8 @@ void DroneSlam::processFrame()
 					if (!isTracked)
 					{
 						stream->setCanTrack(false);
-						return;
+						delete trackingStrategy;
+						break;
 					}
 					//Set up first bounding box
 					originalBoundingBox = currBoundingBox.getRegion();
@@ -1417,8 +1421,10 @@ void DroneSlam::processFrame()
 					countIoU50++;
 					countIoU75++;
 					checkDetect = true;
-					preBBoxFrame = image(originalBoundingBox).clone();
-					
+					preBBoxFrame = image(originalBoundingBox);
+
+					trackingStrategy = trackingController.selectTrackingStrategy(trackingMethod, preBBoxFrame,originalBoundingBox, firstDetectedId);
+
 					startTracking = true;
 				}
 				if (startTracking)
@@ -1957,6 +1963,7 @@ bool DroneSlam::getGroundTruthForTracking(int startTrackingFrame, cv::Mat& image
 	}
 	Rect originalBox = boxHelper.normalizeCroppedBox(trackingGroundTruth.getBoundingBox(), image.cols, image.rows);
 	currBBox.setRegion(originalBox);
+	groundTruthMat.release();
 	return true;
 }
 
@@ -2018,10 +2025,26 @@ DroneSlam::DroneSlam(string outCamPose, string outObjectPose)
 
 DroneSlam::~DroneSlam()
 {
-	delete objectDetection;
-	delete detectAndTracker;
-	delete triangulateStereo;
-	delete imageMatching;
+	if (objectDetection)
+	{
+		delete objectDetection;
+	}
+	if (detectAndTracker)
+	{
+		delete detectAndTracker;
+	}
+	if (triangulateStereo)
+	{
+		delete triangulateStereo;
+	}
+	if(imageMatching)
+	{ 
+		delete imageMatching;
+	}
+	if (stream)
+	{
+		delete stream;
+	}
 	//release matrix
 	result1.release();
 	result2.release();

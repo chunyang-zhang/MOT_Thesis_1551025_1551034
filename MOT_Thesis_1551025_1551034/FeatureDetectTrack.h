@@ -13,7 +13,6 @@ private:
 	cv::Ptr<BriefDescriptorExtractor> briefDescriptor;
 	cv::Ptr<DAISY> daisyDescriptor;
 	cv::Ptr<cv::AgastFeatureDetector> agastDetector;
-	cv::Ptr<cv::MSER> mserDetector;
 	cv::Ptr<LATCH> latchDescriptor;
 	cv::Ptr<cv::Feature2D> descriptor;
 	cv::Ptr<FREAK> freakDescriptor;
@@ -24,6 +23,7 @@ private:
 	string detectM;
 	string descriptM;
 public:
+	~FeatureDetectTrack();
 	FeatureDetectTrack();
 	void setDetectDescriptorMethod(string detectM, string descriptM);
 	//detect Key Points from image

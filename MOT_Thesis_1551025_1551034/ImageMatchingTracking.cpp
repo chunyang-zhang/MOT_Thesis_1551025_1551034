@@ -6,11 +6,6 @@ ImageMatchingTracking::~ImageMatchingTracking()
 	{
 		delete imageMatching;
 	}
-	if (objectDetection != NULL)
-	{
-		delete objectDetection;
-
-	}
 	preBBoxFrame.release();
 }
 
@@ -20,7 +15,7 @@ ImageMatchingTracking::ImageMatchingTracking(const cv::Mat& preBBoxFrame,int fir
 	imageMatching = new ImageMatching();
 }
 
-bool ImageMatchingTracking::update(const cv::Mat& image, cv::Rect& bbox)
+bool ImageMatchingTracking::update( cv::Mat& image, cv::Rect& bbox)
 {
 	Rect processBounding;
 	Mat detectFrame;
@@ -65,6 +60,7 @@ bool ImageMatchingTracking::update(const cv::Mat& image, cv::Rect& bbox)
 	{
 		cout << "Lost the object" << endl;
 	}
+	detectFrame.release();
 	return checkDetect;
 
 }

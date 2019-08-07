@@ -138,12 +138,14 @@
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="DroneSlam.cpp" />
     <ClCompile Include="FeatureDetectTrack.cpp" />
+    <ClCompile Include="Hungarian.cpp" />
     <ClCompile Include="ImageMatching.cpp" />
     <ClCompile Include="ImageMatchingTracking.cpp" />
     <ClCompile Include="IMUPackage.cpp" />
     <ClCompile Include="InputStreamer.cpp" />
     <ClCompile Include="IoUImageMatchingTracking.cpp" />
     <ClCompile Include="IoUTracking.cpp" />
+    <ClCompile Include="KalmanTracker.cpp" />
     <ClCompile Include="KeyPointConversion.cpp" />
     <ClCompile Include="LoadLabelResult.cpp" />
     <ClCompile Include="main.cpp" />
@@ -153,6 +155,7 @@
     <ClCompile Include="OutputObjectPose.cpp" />
     <ClCompile Include="OutputPose.cpp" />
     <ClCompile Include="OutputTracking.cpp" />
+    <ClCompile Include="SortTracking.cpp" />
     <ClCompile Include="StereoCalibration.cpp" />
     <ClCompile Include="StereoTriangulate.cpp" />
     <ClCompile Include="TrackingController.cpp" />
@@ -171,12 +174,14 @@
     <ClInclude Include="DroneSlam.h" />
     <ClInclude Include="FeatureDetectTrack.h" />
     <ClInclude Include="FeatureStorage.h" />
+    <ClInclude Include="Hungarian.h" />
     <ClInclude Include="ImageMatching.h" />
     <ClInclude Include="ImageMatchingTracking.h" />
     <ClInclude Include="IMUPackage.h" />
     <ClInclude Include="InputStreamer.h" />
     <ClInclude Include="IoUImageMatchingTracking.h" />
     <ClInclude Include="IoUTracking.h" />
+    <ClInclude Include="KalmanTracker.h" />
     <ClInclude Include="KeyPointConversion.h" />
     <ClInclude Include="LoadLabelResult.h" />
     <ClInclude Include="OutputAllObjectPose.h" />
@@ -187,6 +192,7 @@
     <ClInclude Include="OutputTracking.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RPY.h" />
+    <ClInclude Include="SortTracking.h" />
     <ClInclude Include="StereoCalibration.h" />
     <ClInclude Include="StereoTriangulate.h" />
     <ClInclude Include="TrackingController.h" />

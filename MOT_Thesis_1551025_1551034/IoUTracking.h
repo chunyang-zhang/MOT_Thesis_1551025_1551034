@@ -8,7 +8,7 @@ private:
 	float ratioThreshold;
 public:
 	// Inherited via TrackingStrategy
-	bool update(const cv::Mat& image, cv::Rect& bbox) override;
+	bool update( cv::Mat& image, cv::Rect& bbox) override;
 	IoUTracking(int firstDetectedId);
 	~IoUTracking();
 };

@@ -32,6 +32,7 @@ private:
 	void clearResult();
 	float iouThreshold;
 public:
+
 	void setIoUThreshold(float iouRatio);
 	//Draw predicted bounding box
 	void drawPrediction(int classId, float conf, int left, int top, int right, int bottom,cv::Scalar color, cv::Mat& frame);

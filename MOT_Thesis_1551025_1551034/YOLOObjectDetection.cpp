@@ -174,6 +174,7 @@ void YOLOObjectDetection::postprocess(cv::Mat& frame, const vector<cv::Mat>& out
 				confidences.push_back((float)confidence);
 				boxes.push_back(Rect(left, top, width, height));
 			}
+			scores.release();
 		}
 	}
 

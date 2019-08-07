@@ -7,11 +7,7 @@
 class CameraIMUStreamer:public InputStreamer
 {
 private:
-	//videostream from camera 1
-	cv::VideoCapture cap1;
-	//video stream from camera2
-	cv::VideoCapture cap2;
-	
+
 	//dỉrectory to image folder
 	string pathL;
 	string pathR;
