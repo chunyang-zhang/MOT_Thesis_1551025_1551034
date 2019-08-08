@@ -90,6 +90,7 @@ private:
 
 	bool isTracked;
 	bool noTracked;
+	static int MINPOINTS;
 private:
 	//init map for stereo with keypoint, 3D local space, 
 	void addFeaturesToLocalMap(vector<cv::KeyPoint>& keyPoints1, vector<cv::DMatch>& stereoMatches, Point3DVector& point3DStereo, vector<float>& allQuality,int frameId,const CameraParameters& camParams );

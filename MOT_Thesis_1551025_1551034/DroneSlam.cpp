@@ -1183,8 +1183,7 @@ void DroneSlam::processFrame()
 				//Output iou tracking
 				iou50 = 1.0* countIoU50 / groundTruthList.size();
 				iou75 = 1.0* countIoU75 / groundTruthList.size();
-				trackingTime /= (double)CLOCKS_PER_SEC;
-				trackingTime /= countTracking;
+				trackingTime = trackingStrategy->getTrackingTime();
 				trackingResult.setIoU50(iou50);
 				trackingResult.setIoU75(iou75);
 				trackingResult.setObjectName(objectDetection->getNameOfClass(firstDetectedId));
@@ -1426,12 +1425,10 @@ void DroneSlam::processFrame()
 					//For all tracker, input: Frame, and original bbox
 					
 					//Tracking
-					clock_t startTracking = clock();
 					if (trackingStrategy)
 					{
 						checkDetect = trackingStrategy->update(image, originalBoundingBox);
 					}
-					trackingTime += clock() - startTracking;
 					//Detect
 					//Result
 					int btmText = image.rows - 25;
@@ -1487,7 +1484,7 @@ void DroneSlam::processFrame()
 						//draw2DBoundingBox(image, pointsImage3DBox);
 
 							//Calculate object Pos
-						if (pInsideBoxIndex.size() != 0)
+						if (pInsideBoxIndex.size() >MINPOINTS)
 						{
 							countObjPos++;
 							objectPos = calculate3DObjectPos(localMap, cameraPos.back(), pInsideBoxIndex, points3DInsideBox);
@@ -1508,13 +1505,18 @@ void DroneSlam::processFrame()
 							//output the object pos to file
 							stream->outObjectPose << frame->id << " " << trackingGroundTruth.getId() << " " << objectDetection->getNameOfClass(firstDetectedId) << " " << left << " " << top << " " << right - left << " " << bottom - top << " " << objectPos.x() << " " << objectPos.y() << " " << objectPos.z() << endl;
 							cout << "Object AED error: " << error << endl;
+							string objPosText = "Obj Pose (" + roundValue(objectPos.x(), 4) + ", " + roundValue(objectPos.y(), 4) + ", " + roundValue(objectPos.z(), 4) + ")";
+							putText(image, objPosText, Point(25, btmText), 1, 1.5, Scalar(0, 137, 255), 2, 2);
 						}
 
+						else
+						{
+							cout << "The number of points is not available for localization." << endl;
+						}
 						//Draw Predict
 						objectDetection->drawPrediction(currBoundingBox.getClassId(), currBoundingBox.getConfidence(), left, top, right, bottom, Scalar(25, 255, 0), image);
 						//Draw Object Pose
-						string objPosText = "Obj Pose (" + roundValue(objectPos.x(), 4) + ", " + roundValue(objectPos.y(), 4) + ", " + roundValue(objectPos.z(), 4) + ")";
-						putText(image, objPosText, Point(25, btmText), 1, 1.5, Scalar(0, 137, 255), 2, 2);
+
 
 					}
 					//keep the same bounding box if cant not find any.
@@ -1972,7 +1974,7 @@ float DroneSlam::getAED()
 	return result;
 }
 
-
+int DroneSlam::MINPOINTS = 5;
 DroneSlam::DroneSlam(string outCamPose, string outObjectPose)
 {
 	//streamer from Cameras and IMU

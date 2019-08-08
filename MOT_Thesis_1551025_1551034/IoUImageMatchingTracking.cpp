@@ -1,7 +1,21 @@
 #include "IoUImageMatchingTracking.h"
 using namespace cv;
+void IoUImageMatchingTracking::update()
+{
+	timeSinceUpdate = 0;
+	hitStreak++;
+}
+bool IoUImageMatchingTracking::predict()
+{
+	timeSinceUpdate += 1;
+	if (timeSinceUpdate > 0)
+	{
+		hitStreak = 0;
+	}
+	return true;
+}
 IoUImageMatchingTracking::IoUImageMatchingTracking(const cv::Mat& preBBoxFrame, int firstDetectedId):TrackingStrategy(firstDetectedId),
-preBBoxFrame(preBBoxFrame),countLost(0),ratioThreshold(0.55)
+preBBoxFrame(preBBoxFrame),hitStreak(0),timeSinceUpdate(0)
 {
 	imageMatching = new ImageMatching();
 
@@ -23,7 +37,19 @@ bool IoUImageMatchingTracking::update(cv::Mat& image, cv::Rect& bbox)
 	Mat detectFrame;
 	BoundingBox croppedBoxResult;
 	vector<BoundingBox> bboxList;
-	if (countLost >= 2)
+	vector<int> assignment;
+	//get small surrounding frame
+	vector<Rect> predictedBoxes;
+	int minHits = 0;
+	float iouThreshold = 0.25f;
+	//iouMatrix
+	vector<vector<double>> iouMatrix;
+	vector<cv::Point> matchedPairs;
+	unsigned int trkNum = 0;//l
+	unsigned int detNum = 0;//l
+	HungarianAlgorithm HungAlgo;
+
+	if (timeSinceUpdate > maxAge)
 	{
 		cout << "Perform Image Matching for full frame!" << endl;
 		processBounding = Rect(0, 0, image.cols, image.rows);
@@ -41,71 +67,114 @@ bool IoUImageMatchingTracking::update(cv::Mat& image, cv::Rect& bbox)
 
 
 	bool checkDetect = objectDetection->objectDetect(detectFrame);
+
 	//Tracking(Frame);
 	//IoU
-	if (checkDetect)
+	if (!checkDetect)
 	{
-		cout << "Successfully detected" << endl;
-		
-		if (countLost < 2)
+		return false;
+	}
+	cout << "Successfully detected" << endl;
+	//get bouding boxes with its original size
+	objectDetection->getRelatedBoundingBoxes(bboxList, processBounding, firstDetectedId);
+	if (bboxList.size() == 0)
+	{
+		cout << "Cant detect any object" << endl;
+		return false;
+	}
+	clock_t start = clock();
+	trackingCount++;
+
+	predictedBoxes.push_back(bbox);
+	predict();
+
+	cout << "Perform IoU" << endl;
+
+	//2. associate detections to tracked object (from yolo to kalman)
+	trkNum = predictedBoxes.size();
+	detNum = bboxList.size();
+	//iou Matrix of each tracking with full detection
+	iouMatrix.resize(trkNum, vector<double>(detNum, 0));
+	//compute iou matrix
+	for (int i = 0; i < trkNum; i++)
+	{
+		for (int j = 0; j < detNum;j++)
 		{
-			cout << "Perform IoU" << endl;
-			//get box with the same class Id with the original and also best IoU with original boundingbox
-			//Perform IoU only when countLost<2
-			checkDetect = objectDetection->getRelatedBoundingBox(firstDetectedId, bbox, processBounding, croppedBoxResult);
-			if (checkDetect)
-			{
-				cout << "Successfully Detect a Object" << endl;
-				objectDetection->setIoUThreshold(1 / pow(ratioThreshold, countLost));
-				//Convert to original size
-				//width height the same
-				bbox = boxHelper.normalizeCroppedBox(boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y), image.cols, image.rows);
-				
-				preBBoxFrame.release();
-				preBBoxFrame = image(bbox).clone();
-				countLost = 0;
-
-			}
-
-		}
-		//If can detect object but count lost, or cannot detect
-		if ((checkDetect && countLost >= 2) || !checkDetect)
-		{
-
-			objectDetection->getAllBoundingBox(bboxList);
-			cout << "Perform matching since IoU not working" << endl;
-			int boxIndex = imageMatching->getBoundingBoxImageMatching(preBBoxFrame, detectFrame, firstDetectedId, bboxList);
-			if (boxIndex == -1)
-			{
-				checkDetect = false;
-			}
-			else
-			{
-				croppedBoxResult = bboxList[boxIndex];
-				bbox = boxHelper.normalizeCroppedBox(boxHelper.getOriginalBoundingBox(croppedBoxResult.getRegion(), processBounding.x, processBounding.y), image.cols, image.rows);
-				preBBoxFrame.release();
-				preBBoxFrame = image(bbox).clone();
-				checkDetect = true;
-
-				countLost = 0;
-			}
-		}
-		//onlyy reduce the IoU threshold after ImageMatching phase.
-		if(!checkDetect)
-		{
-			cout << "Fail to detect a object" << endl;
-			if (countLost < 1)
-			{
-				objectDetection->setIoUThreshold(ratioThreshold);
-			}
-			countLost++;
+			iouMatrix[i][j] = 1 - objectDetection->calculateIoU(predictedBoxes[i], bboxList[j].getRegion());
 		}
 	}
-	if (countLost >= 2)
+	//solve the assignment problem using hugarian algorithm
+	//the result is [track:detection]
+	HungAlgo.Solve(iouMatrix, assignment);
+
+	//filter out matched with low IoU
+	//only have 1 object tracked if cant track?
+	for (int i = 0;i < trkNum;i++)
 	{
-		cout << "Lost the object" << endl;
+		if (assignment[i] == -1)
+		{
+			cout << "No Matched pair" << endl;
+			continue;
+		}
+		//iou small
+		if (1 - iouMatrix[i][assignment[i]] < iouThreshold)
+		{
+			cout << "No Matched pair" << endl;
+		}
+		else {
+			matchedPairs.push_back(Point(i, assignment[i]));
+		}
 	}
+	//3.3 update trackers?
+	//should be only 1 match pair
+	//If there is no matched pair -> time since update increase -> = 2 then lost track
+	int detIdx = 0, trkIdx = 0;
+	for (int i = 0;i < matchedPairs.size();i++)
+	{
+		trkIdx = matchedPairs[i].x;
+		detIdx = matchedPairs[i].y;
+		update();
+		//if first time update and continously tracked hit >2 or hit streak just start
+		//or it hit for the first two frame.
+	}
+	//fail when 
+	if (timeSinceUpdate< 1 && hitStreak > minHits)//minHits || (*it).getHits() <= minHits))
+	{
+		bbox = boxHelper.normalizeCroppedBox(bboxList[detIdx].getRegion(),image.cols,image.rows);
+		checkDetect = true;
+		preBBoxFrame.release();
+		preBBoxFrame = image(bbox).clone();
+	}
+	else if (timeSinceUpdate > maxAge)
+	{
+		checkDetect = false;
+	}
+
+	//If can detect object but tim since last update large, or cannot detect
+	if (!checkDetect)
+	{
+		cout << "Perform matching since IoU not working" << endl;
+		//get box by image matching.
+		int boxIndex = imageMatching->getBoundingBoxImageMatching(preBBoxFrame, image, bboxList);
+		if (boxIndex == -1)
+		{
+			cout << "Time since update: " << timeSinceUpdate << endl;
+			checkDetect = false;
+		}
+		else
+		{
+			cout << "Succesfully matched~" << endl;
+			croppedBoxResult = bboxList[boxIndex];
+			bbox = boxHelper.normalizeCroppedBox(croppedBoxResult.getRegion(), image.cols, image.rows);
+			checkDetect = true;
+			preBBoxFrame.release();
+			preBBoxFrame = image(bbox).clone();
+			update();
+		}
+	}
+
 	detectFrame.release();
+	trackingTime += clock() - start;
 	return checkDetect;
 }
 

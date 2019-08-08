@@ -6,7 +6,7 @@ class ImageMatchingTracking :
 {
 private:
 	//Tracking lost to change the state.
-	int countLost;
+	int timeSinceUpdate;
 	ImageMatching* imageMatching;
 	cv::Mat preBBoxFrame;
 public:

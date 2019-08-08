@@ -37,11 +37,11 @@ KCFTracker::KCFTracker(cv::Mat& frame, cv::Rect& bbox)
 }
 
 bool KCFTracker::update(cv::Mat& image, cv::Rect& bbox)
-{Rect processBounding;
+{
+	Rect processBounding = Rect(0, 0, image.cols, image.rows);
 	BoundingBox croppedBoxResult;
 	//get small surrounding frame
 	vector<BoundingBox> bboxList;
-	int maxAge = 4;
 	int minHits = 0;
 
 	float iouTheshold = 0.25f;
@@ -73,7 +73,14 @@ bool KCFTracker::update(cv::Mat& image, cv::Rect& bbox)
 	{
 		return checkDetect;
 	}
-	objectDetection->getAllBoundingBox(bboxList);
+	objectDetection->getRelatedBoundingBoxes(bboxList, processBounding, firstDetectedId);
+	if (bboxList.size() == 0)
+	{
+		return false;
+	}	
+
+	clock_t start = clock();
+	trackingCount++;
 	bool checkTrack = predict(image, box);
 	//if (checkTrack)
 	//{
@@ -86,6 +93,7 @@ bool KCFTracker::update(cv::Mat& image, cv::Rect& bbox)
 	//csrt update tracking
 	if (!checkTrack)
 	{
+		trackingTime += clock() - start;
 		return false;
 	}
 	predictedBoxes.push_back(box);
@@ -143,15 +151,17 @@ bool KCFTracker::update(cv::Mat& image, cv::Rect& bbox)
 	//fail when 
 	if (timeSinceUpdate< 1 && hitStreak > minHits)//minHits || (*it).getHits() <= minHits))
 	{
-		bbox = bboxList[detIdx].getRegion();
+		bbox = boxHelper.normalizeCroppedBox(bboxList[detIdx].getRegion(), image.cols, image.rows);
+		checkTrack = true;
 	}
 	//allow 2 frames lost or delete it.
 	else if (timeSinceUpdate > maxAge)
 	{
 		//bbox = Rect(box);
 		cout << "Time since update: " << timeSinceUpdate << endl;
-		return false;
-
+		checkTrack = false;
 	}
-	return true;
+	
+	trackingTime += clock() - start;
+	return checkTrack;
 }

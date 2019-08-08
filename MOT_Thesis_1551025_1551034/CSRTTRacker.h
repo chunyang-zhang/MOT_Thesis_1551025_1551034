@@ -1,7 +1,6 @@
 #pragma once
 #include "TrackingStrategy.h"
 #include "Types.h"
-#include "Hungarian.h"
 class CSRTTRacker :
 	public TrackingStrategy
 {

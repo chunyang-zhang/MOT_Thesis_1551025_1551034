@@ -23,11 +23,10 @@ SortTracking::~SortTracking()
 }
 bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 {
-	Rect processBounding;
+	Rect processBounding = Rect(0,0,image.cols,image.rows);
 	BoundingBox croppedBoxResult;
 	//get small surrounding frame
 	vector<BoundingBox> bboxList;
-	int maxAge = 5;
 	int minHits =0;
 	float iouTheshold = 0.25f;
 	//use 
@@ -58,8 +57,13 @@ bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 	{
 		return checkDetect;
 	}
-	objectDetection->getAllBoundingBox(bboxList);
-	
+	objectDetection->getRelatedBoundingBoxes(bboxList, processBounding, firstDetectedId);
+	if (bboxList.size() == 0)
+	{
+		return false;
+	}
+	clock_t start = clock();
+	trackingCount++;
 	//get predicted location from existing trackers
 	//only 1
 	for (auto it = trackers.begin();it != trackers.end();) 
@@ -78,6 +82,7 @@ bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 	}
 	if (trackers.size() == 0)
 	{
+		trackingTime += clock() - start;
 		return false;
 	}
 	//2. associate detections to tracked object (from yolo to kalman)
@@ -136,25 +141,24 @@ bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 		if (((*it).getTimeSinceUpdate() < 1) &&
 			((*it).getHitStreak() > minHits))//minHits || (*it).getHits() <= minHits))
 		{
-			bbox = (*it).getState();
+			bbox = boxHelper.normalizeCroppedBox((*it).getState(), image.cols, image.rows);
 			it++;
+			checkDetect = true;
 		}
 		//allow 2 frames lost or delete it.
 		else if (it != trackers.end() && (*it).getTimeSinceUpdate() > maxAge)
 		{
 			it = trackers.erase(it);
 			cout << "Time since update: " << (*it).getTimeSinceUpdate() << endl;
+			checkDetect = false;
 		}
 		else
 		{
 
-			//(*it).update(predictedBoxes[count]);
-			it++; //keep it one more frame.
+			it++; //keep it maxAge more frame.
 		}
 	}
-	if (trackers.size() == 0)
-	{
-		return false;
-	}
-	return true;
+
+	trackingTime += clock() - start;
+	return checkDetect;
 }

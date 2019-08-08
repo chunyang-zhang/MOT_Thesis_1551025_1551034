@@ -14,7 +14,7 @@ private:
 	//Ptr<DescriptorMatcher> matcher;
 	BoundingBoxHelper boxHelper;
 public:
-	int getBoundingBoxImageMatching(const cv::Mat& preBBoxFrame, const cv::Mat& detectFrame, int firstDetectedId,vector<BoundingBox>& bboxList);
+	int getBoundingBoxImageMatching(const cv::Mat& preBBoxFrame, const cv::Mat& detectFrame,vector<BoundingBox>& bboxList);
 	ImageMatching();
 	~ImageMatching();
 };

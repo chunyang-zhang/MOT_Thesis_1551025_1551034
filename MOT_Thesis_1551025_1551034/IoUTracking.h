@@ -7,7 +7,6 @@ class IoUTracking :
 private:
 	int hitStreak;
 	int timeSinceUpdate;
-	//float ratioThreshold;
 	void update();
 	bool predict();
 public:

@@ -5,10 +5,12 @@ class IoUImageMatchingTracking :
 	public TrackingStrategy
 {
 private:
-	int countLost;
-	float ratioThreshold;
+	int timeSinceUpdate;
+	int hitStreak;
 	ImageMatching*imageMatching;
 	cv::Mat preBBoxFrame;
+	void update();
+	bool predict();
 public:
 	IoUImageMatchingTracking(const cv::Mat& preBBoxFrame, int firstDetectedId);
 	~IoUImageMatchingTracking();
