@@ -24,7 +24,6 @@ SortTracking::~SortTracking()
 bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 {
 	Rect processBounding;
-	Mat detectFrame;
 	BoundingBox croppedBoxResult;
 	//get small surrounding frame
 	vector<BoundingBox> bboxList;
@@ -37,33 +36,26 @@ bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 
 	//Hungarian result
 	vector<int> assignment;
-	set<int> unmatchedTrajectories;
-	set<int> allItems;
-	//matches of detection and track
-	set<int> matchedItems; 
+
 	vector<cv::Point> matchedPairs;
 	unsigned int trkNum = 0;//l
 	unsigned int detNum = 0;//l
 	HungarianAlgorithm HungAlgo;
 
 
-	//processBounding = boxHelper.getNewBoundingBox(bbox, ratio, image.rows, image.cols);
-	processBounding = Rect(0, 0, image.cols, image.rows);
 
 	//Surrounding Object For Detection
 
-	detectFrame = image(processBounding);
 	//Tracking
 	//bool ok = tracker->update(image, bbox);
 	//Detect
 
 	//box from yolo
-	bool checkDetect = objectDetection->objectDetect(detectFrame);
+	bool checkDetect = objectDetection->objectDetect(image);
 	//get box from yolo detections
 
 	if (!checkDetect)
 	{
-		detectFrame.release();
 		return checkDetect;
 	}
 	objectDetection->getAllBoundingBox(bboxList);
@@ -105,35 +97,6 @@ bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 	//the result is [track:detection]
 	HungAlgo.Solve(iouMatrix, assignment);
 
-	//there are unmatched detections (cant track, can detect)
-	//With unmatched detections init trackers for it ?
-
-	if (detNum > trkNum)
-	{
-		for (int i = 0;i < detNum;i++)
-		{
-			allItems.insert(i);
-		}
-		//matched items 
-		for (int i = 0;i < trkNum;i++)
-		{
-			matchedItems.insert(assignment[i]);
-		}
-	}
-	//unmatched detections (trajectories)
-	//track, cant detect
-	//should solve case that can track but cant detect? -> our case different
-	else if (detNum < trkNum)
-	{
-		for (int i = 0;i < trkNum;i++)
-		{
-			//unassigned label will 
-			if (assignment[i] == -1)
-			{
-				unmatchedTrajectories.insert(i);
-			}
-		}
-	}
 
 	//filter out matched with low IoU
 	//only have 1 object tracked if cant track?
@@ -191,7 +154,6 @@ bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 	}
 	if (trackers.size() == 0)
 	{
-		detectFrame.release();
 		return false;
 	}
 	return true;

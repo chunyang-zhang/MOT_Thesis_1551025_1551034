@@ -136,6 +136,7 @@
     <ClCompile Include="CameraParamters.cpp" />
     <ClCompile Include="CamerasIMUFrame.cpp" />
     <ClCompile Include="Config.cpp" />
+    <ClCompile Include="CSRTTRacker.cpp" />
     <ClCompile Include="DroneSlam.cpp" />
     <ClCompile Include="FeatureDetectTrack.cpp" />
     <ClCompile Include="Hungarian.cpp" />
@@ -146,6 +147,7 @@
     <ClCompile Include="IoUImageMatchingTracking.cpp" />
     <ClCompile Include="IoUTracking.cpp" />
     <ClCompile Include="KalmanTracker.cpp" />
+    <ClCompile Include="KCFTracker.cpp" />
     <ClCompile Include="KeyPointConversion.cpp" />
     <ClCompile Include="LoadLabelResult.cpp" />
     <ClCompile Include="main.cpp" />
@@ -171,6 +173,7 @@
     <ClInclude Include="CameraParamters.h" />
     <ClInclude Include="CamerasIMUFrame.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="CSRTTRacker.h" />
     <ClInclude Include="DroneSlam.h" />
     <ClInclude Include="FeatureDetectTrack.h" />
     <ClInclude Include="FeatureStorage.h" />
@@ -182,6 +185,7 @@
     <ClInclude Include="IoUImageMatchingTracking.h" />
     <ClInclude Include="IoUTracking.h" />
     <ClInclude Include="KalmanTracker.h" />
+    <ClInclude Include="KCFTracker.h" />
     <ClInclude Include="KeyPointConversion.h" />
     <ClInclude Include="LoadLabelResult.h" />
     <ClInclude Include="OutputAllObjectPose.h" />

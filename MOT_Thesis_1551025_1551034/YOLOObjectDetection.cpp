@@ -250,7 +250,8 @@ void YOLOObjectDetection::drawPrediction(int classId, float conf, int left, int 
 	//Draw rectangle displaying the bounding box
 	rectangle(frame, Point(left, top), Point(right, bottom),color,3);
 	//Get the label for the class name and its confidence
-	string label = format("%.2f", conf);
+	//string label = format("%.2f", conf);
+	string label = "";
 	if (!classes.empty())
 	{
 		//class Id smaller than the total size

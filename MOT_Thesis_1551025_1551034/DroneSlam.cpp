@@ -1081,8 +1081,6 @@ void DroneSlam::processFrame()
 	Mat descriptor2;
 	//groundTruth Value
 	Mat image;
-	Mat groundTruthMat;
-	Mat preBBoxFrame;
 	TrackingStrategy* trackingStrategy = NULL;
 	TrackingController trackingController;
 	//GroundTruthResult
@@ -1128,8 +1126,6 @@ void DroneSlam::processFrame()
 	outputPose.setDistance(distance);
 	outputPose.setNumPics(numPics);
 	outputPose.setVelocity(velocity);
-	//Testing Tracker CSRT
-	Ptr<Tracker> tracker = TrackerCSRT::create();
 
 	bool validReadFrame;
 	//important only start tracking when meet this frame and so on
@@ -1220,10 +1216,6 @@ void DroneSlam::processFrame()
 				isTracked = true;
 				stream->setStopTrack(isTracked);
 				//Release Matrix
-				if (!preBBoxFrame.empty())
-				{
-					preBBoxFrame.release();
-				}
 				delete trackingStrategy;
 				break;
 			}
@@ -1370,8 +1362,7 @@ void DroneSlam::processFrame()
 				countIoU75++;
 				checkDetect = true;
 
-				preBBoxFrame = image(originalBoundingBox);
-				trackingStrategy = trackingController.selectTrackingStrategy(trackingMethod, preBBoxFrame, originalBoundingBox, firstDetectedId);
+				trackingStrategy = trackingController.selectTrackingStrategy(trackingMethod, image, originalBoundingBox, firstDetectedId);
 				startTracking = true;
 			}
 
@@ -1421,9 +1412,8 @@ void DroneSlam::processFrame()
 					countIoU50++;
 					countIoU75++;
 					checkDetect = true;
-					preBBoxFrame = image(originalBoundingBox);
 
-					trackingStrategy = trackingController.selectTrackingStrategy(trackingMethod, preBBoxFrame,originalBoundingBox, firstDetectedId);
+					trackingStrategy = trackingController.selectTrackingStrategy(trackingMethod, image,originalBoundingBox, firstDetectedId);
 
 					startTracking = true;
 				}
@@ -1802,10 +1792,6 @@ void DroneSlam::processFrame()
 		if (!descriptor2.empty())
 		{
 			descriptor2.release();
-		}
-		if (!groundTruthMat.empty())
-		{
-			groundTruthMat.release();
 		}
 
 	}
