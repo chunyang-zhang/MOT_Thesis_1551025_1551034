@@ -31,6 +31,7 @@ private:
 	BoundingBox bbox;
 	void clearResult();
 	float iouThreshold;
+	bool checkValidId(int firstDetectedId, int Id);
 public:
 
 	void setIoUThreshold(float iouRatio);
@@ -47,5 +48,6 @@ public:
 	bool getRelatedBoundingBox(int classId,const cv::Rect& bRect, const cv::Rect& processedBounding, BoundingBox& bb);
 	float calculateIoU(const cv::Rect& boxA, const cv::Rect& boxB);
 	string getNameOfClass(int classId);
+	void getRelatedBoundingBoxes(vector<BoundingBox>& bboxList, const cv::Rect& processedBounding,int classId);
 };
 

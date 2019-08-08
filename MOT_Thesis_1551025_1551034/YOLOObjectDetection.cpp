@@ -104,7 +104,7 @@ bool YOLOObjectDetection::getRelatedBoundingBox(int classId, const Rect& bRect
 		{
 			idx = indices[relevantIdx[i]];
 			iou = relevantIoUList[i];
-			if (iou > bestRelevantIoU && iou>iouThreshold)
+			if ( iou>iouThreshold)
 			{
 				bestIoU = iou;
 				bestIdx = idx;
@@ -141,6 +141,50 @@ string YOLOObjectDetection::getNameOfClass(int classId)
 {
 	return classes[classId];
 }
+
+void YOLOObjectDetection::getRelatedBoundingBoxes(vector<BoundingBox>& bboxList, const cv::Rect& processedBounding, int classId)
+{
+	bboxList.clear();
+	BoundingBox bb;
+	int idx;
+	Rect tmpBox;
+	BoundingBoxHelper helper;
+	if (indices.size() != 0)
+	{
+		//Max(
+		for (size_t i = 0; i < indices.size(); ++i)
+		{
+			idx = indices[i];
+			//Only valid Id Is allowed to check.
+			//compare class Id
+			if (checkValidId(classId, classIds[idx]))
+			{
+				bb.setClassId(classIds[idx]);
+				bb.setConfidence(confidences[idx]);
+				tmpBox = helper.getOriginalBoundingBox(boxes[idx], processedBounding.x, processedBounding.y);
+				bb.setRegion(tmpBox);
+				bboxList.push_back(bb);
+			}
+			
+
+		}
+	}
+}
+
+bool YOLOObjectDetection::checkValidId(int firstDetectedId,int Id)
+{
+	if (firstDetectedId == Id)
+	{
+		return true;
+	}
+	if ((Id == 2 || Id == 5 || Id == 6 || Id == 7) &&(firstDetectedId == 2 || firstDetectedId == 5 || firstDetectedId == 6 || firstDetectedId == 7))
+	{
+		return true;
+	}
+	return false;
+
+}
+
 
 void YOLOObjectDetection::postprocess(cv::Mat& frame, const vector<cv::Mat>& outs)
 {

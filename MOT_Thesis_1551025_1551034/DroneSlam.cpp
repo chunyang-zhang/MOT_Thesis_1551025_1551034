@@ -1937,16 +1937,17 @@ bool DroneSlam::getGroundTruthForTracking(int startTrackingFrame, cv::Mat& image
 	}
 	currBBox = objectDetection->getBestBoundingBox();
 	firstDetectedId = currBBox.getClassId();
-	if (firstDetectedId == 7 || firstDetectedId == 6)
-	{
-		firstDetectedId = 2;
-		currBBox.setClassId(firstDetectedId);
-	}
+	//if (firstDetectedId == 2 || firstDetectedId == 5|| firstDetectedId == 6|| firstDetectedId == 7)
+	//{
+	//	currBBox.setClassId(firstDetectedId);
+	//}
+	currBBox.setClassId(firstDetectedId);
 	if (firstDetectedId == 1)
 	{
 		firstDetectedId = 0;
 		currBBox.setClassId(firstDetectedId);
 	}
+	
 	Rect originalBox = boxHelper.normalizeCroppedBox(trackingGroundTruth.getBoundingBox(), image.cols, image.rows);
 	currBBox.setRegion(originalBox);
 	groundTruthMat.release();

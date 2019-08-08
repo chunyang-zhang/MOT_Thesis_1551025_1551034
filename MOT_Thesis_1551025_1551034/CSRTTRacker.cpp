@@ -43,7 +43,7 @@ bool CSRTTRacker::update(cv::Mat& image, cv::Rect& bbox)
 	int maxAge = 4;
 	int minHits = 0;
 
-	float iouTheshold = 0.25f;
+	float iouThreshold = 0.25f;
 	//use 
 	vector<Rect> predictedBoxes;
 	vector<vector<double>> iouMatrix;
@@ -119,7 +119,7 @@ bool CSRTTRacker::update(cv::Mat& image, cv::Rect& bbox)
 			continue;
 		}
 		//iou small
-		if (1 - iouMatrix[i][assignment[i]] < iouTheshold)
+		if (1 - iouMatrix[i][assignment[i]] < iouThreshold)
 		{
 			cout << "No Matched pair" << endl;
 		}
