@@ -1,0 +1,2 @@
+ID, ObjName, MSE x, MSE y, MSE z, AED
+-1 Avg 0 0 0 0

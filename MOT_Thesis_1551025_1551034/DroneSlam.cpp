@@ -16,6 +16,11 @@ Feature Observation
 
 */
 
+void DroneSlam::setMotionCompensation(bool value)
+{
+	isMotionCompensation = value;
+}
+
 void DroneSlam::addFeaturesToLocalMap(vector<KeyPoint>& keyPoints1, vector<DMatch>& stereoMatches, Point3DVector& point3DStereo, vector<float>& allQuality, int frameId, const CameraParameters& camParams)
 {
 	// update to World coordinate
@@ -728,6 +733,74 @@ void DroneSlam::computeErrAndInliers2(const Point3D& cameraPose, const Point3DVe
 Write:
 Feature Observation
 */
+void DroneSlam::checkAndDeleteCullTrack(vector<Point2f>& currKeyP, vector<Point2f>& preKeyP, vector<bool>& status)
+{
+	// add feature observation to localMap
+	int featureSize = preKeyP.size();
+	Mat featuresObser = toFeatureObsv(currKeyP);
+	Point2f tmpP;
+	for (int k = 0; k < featureSize; k++)
+	{
+		// is not cull track
+		if (status[k])
+		{
+			//get a feature observers
+			tmpP = featuresObser.at<Point2d>(k, 0);
+			//add the valid feature observations to local map
+			localMap[k].featureObservation.push_back(Point3D(tmpP.x, tmpP.y, 1).normalized());
+		}
+		else //is cull
+		{
+			localMap[k].isCull = true;
+		}
+
+		// useless features
+		//not either a mono pose or stereo pose and the current frame - first frame containing the feature is larger
+		if (!localMap[k].isMonoPose && !localMap[k].isStereoPose && (frame->id - localMap[k].firstFrameID) > Config::minFeatureLiveChange)
+		{
+			localMap[k].isCull = true;
+		}
+
+		//Number of time it is a outliers > the maximum number of time 
+		if (localMap[k].nOutliers > Config::minFeatureOutlierChange)
+		{
+			localMap[k].isCull = true;
+		}
+	}
+
+	// delete all cull features in localMap + currKeyP
+	int k = 0;
+	while (k < localMap.size())
+	{
+		if (localMap[k].isCull)
+		{
+			if (k == localMap.size() - 1)//last element
+			{
+				localMap.pop_back();
+				currKeyP.pop_back();
+				preKeyP.pop_back();
+			}
+			else
+			{
+				// push cull feature
+				cullFeatures.push_back(localMap[k]);
+				// replace the current feature map with the back feature local map
+				localMap[k] = localMap.back();
+				localMap.pop_back();
+
+				// currKeyP, then check with current new key point
+				currKeyP[k] = currKeyP.back();
+				currKeyP.pop_back();
+				preKeyP[k] = preKeyP.back();
+				preKeyP.pop_back();
+			}
+		}
+		else
+		{
+			k++;
+		}
+	}
+}
 void DroneSlam::checkAndDeleteCullTrack(vector<Point2f>& currKeyP, vector<Point2f>& preKeyP, vector<uchar>& status)
 {
 	// add feature observation to localMap
@@ -1096,7 +1169,10 @@ void DroneSlam::processFrame()
 	Mat image;
 	Mat groundTruthMat;
 	Mat preBBoxFrame;
-
+	//Motion Compensation Param
+	vector <Point2f> candidatePointBMA;
+	vector<bool> status2;
+	vector<int> assignment;
 
 	//GroundTruthResult
 	string gtName;
@@ -1145,7 +1221,6 @@ void DroneSlam::processFrame()
 	outputPose.setNumPics(numPics);
 	outputPose.setVelocity(velocity);
 	//Testing Tracker CSRT
-	Ptr<Tracker> tracker = TrackerCSRT::create();
 
 	bool validReadFrame;
 	//important only start tracking when meet this frame and so on
@@ -1313,16 +1388,29 @@ void DroneSlam::processFrame()
 				Mat mask = Mat::zeros(frame->mainFrame.size(), CV_8UC1);  // type of mask is CV_8U
 				Mat roi(mask, cv::Rect(50, 50, 1142, 275));
 				roi = Scalar(255);
-
-				// tracking by KLT
-				calcOpticalFlowPyrLK(frame->preMainFrame, frame->mainFrame, prevKeyP, currKeyP, status, err, winSize, 3, termcrit, 0, 0.001);
 				image = frame->mainFrame;
 				//Detection with only the surrounding bounding box regions.
 				cvtColor(image, image, CV_GRAY2RGB);
 
+				// tracking by KLT
+				calcOpticalFlowPyrLK(frame->preMainFrame, frame->mainFrame, prevKeyP, currKeyP, status, err, winSize, 3, termcrit, 0, 0.001);
+				//find out candidate key points using BlockMatching Algorithm motion compensation
+				if (isMotionCompensation)
+				{
+					motionCompensation->setBlockSize(20);
+					motionCompensation->performBlockMatching(frame->preMainFrame, frame->mainFrame, prevKeyP, candidatePointBMA, status2);
+					motionCompensation->findMotionPoints(currKeyP, status, assignment);
+					cout << "Assignment: " << assignment.size() << endl;
+					//set status to delete key point 
+				}
+
+
+
 				Point2f point;
+				int countA =  0;
 				for (int k = 0; k < currKeyP.size(); k++)
 				{
+					
 					if (!status[k])
 						continue;
 					////Green Color
@@ -1338,6 +1426,7 @@ void DroneSlam::processFrame()
 							}
 						}
 					}*/
+
 					if (localMap[k].isStereoPose)
 					{
 						circle(image, currKeyP[k], 3, Scalar(0, 255, 0), -1, 8);
@@ -1362,6 +1451,16 @@ void DroneSlam::processFrame()
 					{
 						circle(image, currKeyP[k], 5, Scalar(255, 255, 255), 2, 4);
 						
+					}
+					if (!motionCompensation)
+					{
+						continue;
+					}
+					if (countA < assignment.size() && assignment[countA] == k)
+					{
+						countA++;
+						circle(image, currKeyP[k], 3, Scalar(204, 0, 204), -1, 8);
+						status[k] = false;
 					}
 					
 				}
@@ -1527,7 +1626,7 @@ void DroneSlam::processFrame()
 				cout << endl << "Local Map Size = " << size_Features;
 				int haveStereo3D = 0;
 				int haveMono3D = 0;
-				for (int i = 0; i < size_Features; i++)
+	/*			for (int i = 0; i < size_Features; i++)
 				{
 					if (localMap[i].isStereoPose)
 					{
@@ -1539,7 +1638,7 @@ void DroneSlam::processFrame()
 					}
 				}
 				cout << endl << "Have STEREO = " << haveStereo3D;
-				cout << endl << "Have MONO = " << haveMono3D;
+				cout << endl << "Have MONO = " << haveMono3D;*/
 
 				// check if have error in system
 				int khi = 0;
@@ -1750,6 +1849,8 @@ DroneSlam::DroneSlam(string outCamPose)
 	objectDetection = new YOLOObjectDetection();
 	//imageMatching
 	imageMatching = new ImageMatching();
+	//Motion compensation
+	motionCompensation = new MotionCompensation();
 	// initial RPY
 	lastRPY.roll = lastRPY.pitch = lastRPY.yaw = 180;
 
@@ -1769,10 +1870,30 @@ DroneSlam::DroneSlam(string outCamPose)
 
 DroneSlam::~DroneSlam()
 {
-	delete objectDetection;
-	delete detectAndTracker;
-	delete triangulateStereo;
-	delete imageMatching;
+	if (objectDetection)
+	{
+		delete objectDetection;
+	}
+	if (detectAndTracker)
+	{
+		delete detectAndTracker;
+	}
+	if (triangulateStereo)
+	{
+		delete triangulateStereo;
+	}
+	if (imageMatching)
+	{
+		delete imageMatching;
+	}
+	if (stream)
+	{
+		delete stream;
+	}
+	if (motionCompensation)
+	{
+		delete motionCompensation;
+	}
 	//release matrix
 	result1.release();
 	result2.release();

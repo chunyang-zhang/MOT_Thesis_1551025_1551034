@@ -18,6 +18,7 @@
 #include"TrackingGroundTruth.h"
 #include "OutputTracking.h"
 #include "OutputObjectPose.h"
+#include "MotionCompensation.h"
 #pragma comment(lib,"ws2_32.lib") //Winsock Library
 
 class DroneSlam
@@ -86,6 +87,11 @@ private:
 	KeyPointConversion keyPointConversion;
 	YOLOObjectDetection* objectDetection;
 
+	//Motion Compensation
+	MotionCompensation* motionCompensation;
+	bool isMotionCompensation;
+
+
 	bool isTracked;
 	bool noTracked;
 private:
@@ -130,6 +136,8 @@ private:
 	void computeErrAndInliers2(const Point3D& cameraPose, const Point3DVector& ObsVectors, const Point3DVector& p3DFeature, vector <int>& inliers, double& error);
 	//Using curr KeyPoints and Pre Keypoints to remove outliers
 	void checkAndDeleteCullTrack(vector <cv::Point2f>& currKeyP, vector <cv::Point2f>& preKeyP, vector <uchar>& status);
+	void checkAndDeleteCullTrack(vector <cv::Point2f>& currKeyP, vector <cv::Point2f>& preKeyP, vector <bool>& status);
+
 	//Remove outliers
 	void deleteCullTrack(vector <cv::Point2f>& currKeyP);
 	//From point to vector
@@ -176,6 +184,7 @@ public:
 	void setGroundTruthValue(vector<TrackingGroundTruth> groundTruthValue);
 	void setTrackingMethod(string trackingMethod);
 	void setRunningMethod(string runMethod);
+	void setMotionCompensation(bool value);
 
 	//bool check wheter can track value
 	bool getIsTracked();

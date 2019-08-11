@@ -20,6 +20,18 @@ FeatureDetectTrack::FeatureDetectTrack()
 	//descriptor = LUCID::create();
 	//descriptor = LATCH::create();
 	//init a matcher should test using KNN?
+	detector = NULL;
+	starDetector = NULL;
+	briefDescriptor = NULL;
+	daisyDescriptor = NULL;
+	agastDetector = NULL;
+	latchDescriptor = NULL;
+	descriptor = NULL;
+	freakDescriptor = NULL;
+	matcher = NULL;
+	orb = NULL;
+	brisk = NULL;
+	fastDetector = NULL;
 	matcher = BFMatcher::create();
 	//flann based created
 	//matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);

@@ -144,6 +144,7 @@
     <ClCompile Include="KeyPointConversion.cpp" />
     <ClCompile Include="LoadLabelResult.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MotionCompensation.cpp" />
     <ClCompile Include="OutputAllObjectPose.cpp" />
     <ClCompile Include="OutputAllTracking.cpp" />
     <ClCompile Include="OutputFile.cpp" />
@@ -171,6 +172,7 @@
     <ClInclude Include="InputStreamer.h" />
     <ClInclude Include="KeyPointConversion.h" />
     <ClInclude Include="LoadLabelResult.h" />
+    <ClInclude Include="MotionCompensation.h" />
     <ClInclude Include="OutputAllObjectPose.h" />
     <ClInclude Include="OutputAllTracking.h" />
     <ClInclude Include="OutputFile.h" />

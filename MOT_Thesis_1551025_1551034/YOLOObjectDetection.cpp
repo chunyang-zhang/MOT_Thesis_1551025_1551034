@@ -34,6 +34,11 @@ bool YOLOObjectDetection::objectDetect (Mat& output)
 	{
 		return false;
 	}
+	blob.release();
+	for (size_t i = 0;i < outs.size();i++)
+	{
+		outs[i].release();
+	}
 	return true;
 
 }
