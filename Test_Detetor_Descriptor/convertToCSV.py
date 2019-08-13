@@ -172,7 +172,7 @@ avg_process_time_matrix = np.full(len(file_names),1./len(path_folder_names),dtyp
 #a 1/n aed matrix
 avg_aed_matrix = np.full(len(file_names),1./len(path_folder_names),dtype = float)
 
-method_id = 6
+method_id = 0
 one_method_result = []
 for i in range(len(path_folder_names)):
     #file_names inside folder

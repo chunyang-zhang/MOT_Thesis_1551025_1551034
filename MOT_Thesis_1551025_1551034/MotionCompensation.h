@@ -17,6 +17,7 @@ public:
 	MotionCompensation(int blockS);
 	MotionCompensation(int blockS, int stepS);
 	void setBlockSize(int blockS);
+	void setBlockStepSize(int blockS, int stepS);
 	//Perform block matching to find candiate motion point for preKeypoints.
 	void performBlockMatching(cv::Mat& preFrame, cv::Mat& mainFrame, const vector<cv::Point2f>& preKeyPoints, vector<cv::Point2f>& candidateKeyPoint, vector<bool>& status);
 	//if currKeyPoints = motion keypoints

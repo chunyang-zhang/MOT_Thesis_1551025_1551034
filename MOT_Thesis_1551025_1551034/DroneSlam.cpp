@@ -1207,7 +1207,8 @@ void DroneSlam::processFrame()
 	float MSEPosx = 0;
 	float MSEPosy = 0;
 	float MSEPosz = 0;
-
+	int countMC = 0;
+	float mcTime = 0;
 	time = getTotalProcessTime();
 	distance = getTotalDistance();
 	velocity = distance / time;
@@ -1255,6 +1256,12 @@ void DroneSlam::processFrame()
 				zMSE /= errPose.size();
 				avgFeatureTime /= (double)CLOCKS_PER_SEC;
 				avgFeatureTime /= countProcessTime;
+				if (isMotionCompensation)
+				{
+					mcTime /= (double)CLOCKS_PER_SEC;
+					mcTime /= countMC;
+					avgFeatureTime += mcTime;
+				}
 				aedCamPos = getAED();
 				outputPose.setErrorPose(Point3D(xMSE, yMSE, zMSE));
 				outputPose.setAED(aedCamPos);
@@ -1397,11 +1404,14 @@ void DroneSlam::processFrame()
 				//find out candidate key points using BlockMatching Algorithm motion compensation
 				if (isMotionCompensation)
 				{
-					motionCompensation->setBlockSize(20);
+					clock_t mc_start = clock();
+					//motionCompensation->setBlockSize(20);
 					motionCompensation->performBlockMatching(frame->preMainFrame, frame->mainFrame, prevKeyP, candidatePointBMA, status2);
 					motionCompensation->findMotionPoints(currKeyP, status, assignment);
 					cout << "Assignment: " << assignment.size() << endl;
 					//set status to delete key point 
+					mcTime += clock() - mc_start;
+					countMC++;
 				}
 
 

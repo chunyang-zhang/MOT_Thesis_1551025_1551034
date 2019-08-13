@@ -72,7 +72,7 @@ bool CameraIMUStreamer::read(CamerasIMUFrame::Ptr &frame)
 	frame->timestamp = time;
 	//Save curr main + sub Img
 	//Release old Frame
-	frame->releaseFrame();
+	//frame->releaseFrame();
 
 
 	mainImg.copyTo(frame->mainFrame);

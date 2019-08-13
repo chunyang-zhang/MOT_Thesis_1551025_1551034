@@ -68,10 +68,10 @@ int main(int argc, char** argv) {
 	string chosenDescriptor = "brief";
 	string trackingMethod = "all";//"IoUMatching";
 	//vector<string> detector = {  "star", "brisk" ,"orb", "fast" };
-	//vector<string> detector = { "brisk","orb","fast", "gftt","star","agast"};
-	//vector<string> descriptor = {"brief", "daisy", "freak","latch" };
-	vector<string> detector = { "agast" };
-	vector<string> descriptor = { "brief" };
+	vector<string> detector = { "brisk","orb","fast", "gftt","star","agast"};
+	vector<string> descriptor = {"brief", "daisy", "freak","latch" };
+	//vector<string> detector = { "orb" };
+	//vector<string> descriptor = { "" };
 	if (argc == 2)
 	{
 		runMethod = argv[1];
@@ -198,11 +198,13 @@ int main(int argc, char** argv) {
 				det = detector[i];
 				des = descriptor[j];
 			}
+			
 			outputFile = "output_error_" + det + "_" +des + ".txt";
+			cout << "Method: " << outputFile << endl;
 			clock_t start = clock();
 			DroneSlam* slam = new DroneSlam(outCamPose);
 			slam->setDetectDescriptorMethod(det, des);
-			slam->setMotionCompensation(true);
+			//slam->setMotionCompensation(true);
 			slam->processFrame();
 
 			ofstream fout(outputFile);

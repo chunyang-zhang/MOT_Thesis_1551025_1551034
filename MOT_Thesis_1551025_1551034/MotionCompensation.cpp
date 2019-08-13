@@ -74,6 +74,18 @@ void MotionCompensation::setBlockSize(int blockS)
 	stepSize = blockSize / 4;
 }
 
+void MotionCompensation::setBlockStepSize(int blockS, int stepS)
+{
+	blockSize = blockS;
+	if (blockSize < 4 || blockSize % 4 != 0)
+	{
+		blockSize = 4;
+	}
+	acceptDistance = blockSize;
+	blockRadius = blockSize / 2;
+	stepSize = stepS;
+}
+
 void MotionCompensation::performBlockMatching(cv::Mat& preFrame, cv::Mat& mainFrame, const vector<cv::Point2f>& preKeyPoints, vector<cv::Point2f>& candidateKeyPoint, vector<bool>& status)
 {
 	candidateKeyPoint.clear();
@@ -164,7 +176,7 @@ bool MotionCompensation::findMotionPoints(vector<cv::Point2f>& currKeyPoints,vec
 		Point p2 = currKeyPoints[i];
 		float eD = euclideanDistance(p1,p2);
 		//The distance to the moving point is small and its moving too far away compare to other points
-		if (eD < 2 && candidateDistances[i] > acceptDistance)
+		if (eD < 2 && candidateDistances[i] >= acceptDistance)
 		{
 			assignment.push_back(i);
 		}

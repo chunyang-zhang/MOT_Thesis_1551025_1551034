@@ -1,0 +1,2 @@
+names,Time(s),Number Of Pics,Distance (m),Velocity(m/s),MSE x,MSE y,MSE z,AED,Avg Feature Time (s)
+output_error_agast_brief,8.8902,87.0000,35.0289,3.9402,0.0233,0.1556,0.1180,0.4926,0.0141
