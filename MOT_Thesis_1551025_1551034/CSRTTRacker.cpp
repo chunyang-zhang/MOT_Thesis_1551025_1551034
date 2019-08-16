@@ -3,18 +3,20 @@ using namespace cv;
 bool CSRTTRacker::predict(Mat& image, Rect2d& box)
 {
 	bool checkTrack = csrtTracker->update(image, box);
-	timeSinceUpdate += 1;
 	if (timeSinceUpdate > 0)
 	{
 		hitStreak = 0;
 	}
+	timeSinceUpdate += 1;
 	return checkTrack;
 }
-void CSRTTRacker::update()
+void CSRTTRacker::updateInternal(cv::Mat& image, cv::Rect2d box)
 {
+	csrtTracker->init(image, box);
 	timeSinceUpdate = 0;
 	hitStreak++;
 }
+
 CSRTTRacker::CSRTTRacker()
 {
 	csrtTracker = TrackerCSRT::create();
@@ -26,12 +28,11 @@ CSRTTRacker::~CSRTTRacker()
 {
 }
 
-CSRTTRacker::CSRTTRacker(cv::Mat& frame, cv::Rect& bbox)
+CSRTTRacker::CSRTTRacker(cv::Mat& frame, cv::Rect& bbox, int firstDetectedId):
+	TrackingStrategy(firstDetectedId), timeSinceUpdate(0), hitStreak(0)
 {
 	csrtTracker = TrackerCSRT::create();
 	csrtTracker->init(frame, bbox);
-	timeSinceUpdate = 0;
-	hitStreak = 0;
 }
 
 bool CSRTTRacker::update(cv::Mat& image, cv::Rect& bbox)
@@ -42,7 +43,6 @@ bool CSRTTRacker::update(cv::Mat& image, cv::Rect& bbox)
 	vector<BoundingBox> bboxList;
 	int minHits = 0;
 
-	float iouThreshold = 0.25f;
 	//use 
 	vector<Rect> predictedBoxes;
 	vector<vector<double>> iouMatrix;
@@ -142,7 +142,7 @@ bool CSRTTRacker::update(cv::Mat& image, cv::Rect& bbox)
 	{
 		trkIdx = matchedPairs[i].x;
 		detIdx = matchedPairs[i].y;
-		update();
+		updateInternal(image, bboxList[detIdx].getRegion());
 		//if first time update and continously tracked hit >2 or hit streak just start
 		//or it hit for the first two frame.
 	}

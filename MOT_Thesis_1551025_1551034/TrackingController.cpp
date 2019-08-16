@@ -22,11 +22,11 @@ TrackingStrategy* TrackingController::selectTrackingStrategy(string method, Mat&
 	}
 	else if (method.compare("CSRT") == 0)
 	{
-		trackingStrategy = new CSRTTRacker(frame, trackingBox);
+		trackingStrategy = new CSRTTRacker(frame, trackingBox,firstDetectedId);
 	}
 	else if (method.compare("KCF") == 0)
 	{
-		trackingStrategy = new KCFTracker(frame, trackingBox);
+		trackingStrategy = new KCFTracker(frame, trackingBox,firstDetectedId);
 	}
 	else
 	{

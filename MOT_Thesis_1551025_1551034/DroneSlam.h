@@ -20,6 +20,7 @@
 #include "OutputObjectPose.h"
 #include "TrackingStrategy.h"
 #include "TrackingController.h"
+#include"MotionCompensation.h"
 #pragma comment(lib,"ws2_32.lib") //Winsock Library
 
 class DroneSlam
@@ -87,6 +88,10 @@ private:
 	//Keypoint Conversion helper
 	KeyPointConversion keyPointConversion;
 	YOLOObjectDetection* objectDetection;
+
+	//Motion Compensation
+	MotionCompensation* motionCompensation;
+	bool isMotionCompensation;
 
 	bool isTracked;
 	bool noTracked;
@@ -181,6 +186,7 @@ public:
 	void setGroundTruthValue(vector<TrackingGroundTruth> groundTruthValue);
 	void setTrackingMethod(string trackingMethod);
 	void setRunningMethod(string runMethod);
+	void setMotionCompensation(bool value);
 
 	//bool check wheter can track value
 	bool getIsTracked();

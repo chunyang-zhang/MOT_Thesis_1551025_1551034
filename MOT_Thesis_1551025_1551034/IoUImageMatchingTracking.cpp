@@ -41,7 +41,6 @@ bool IoUImageMatchingTracking::update(cv::Mat& image, cv::Rect& bbox)
 	//get small surrounding frame
 	vector<Rect> predictedBoxes;
 	int minHits = 0;
-	float iouThreshold = 0.25f;
 	//iouMatrix
 	vector<vector<double>> iouMatrix;
 	vector<cv::Point> matchedPairs;

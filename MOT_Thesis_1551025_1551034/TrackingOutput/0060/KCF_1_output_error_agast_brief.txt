@@ -1,0 +1,2 @@
+Time(s), Number Of Pics, Distance (m), Velocity(m/s), MSE x, MSE y, MSE z, AED, Avg Feature Time (s)
+7.98024, 78, 0.0859349, 0.0107685, 0.000310993, 0.000180576, 6.7672e-05, 0.0221326, 0.00204478

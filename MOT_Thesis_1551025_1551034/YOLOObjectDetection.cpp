@@ -300,7 +300,7 @@ void YOLOObjectDetection::drawPrediction(int classId, float conf, int left, int 
 	{
 		//class Id smaller than the total size
 		CV_Assert(classId < (int)classes.size());
-		label = classes[classId] + ":"+ label;
+		label = classes[classId];
 	}
 	//Display the label at the top of the bounding box
 	int baseLine;

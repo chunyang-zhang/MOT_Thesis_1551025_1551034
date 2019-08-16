@@ -9,13 +9,18 @@ TrackingStrategy::~TrackingStrategy()
 }
 
 TrackingStrategy::TrackingStrategy():
-ratio(2.0f),maxAge(3),trackingTime(0.0f),trackingCount(0)
+ratio(2.0f),maxAge(3),trackingTime(0.0f),trackingCount(0),iouThreshold(0.25)
 {
 	objectDetection = new YOLOObjectDetection();
 }
 
+TrackingStrategy::TrackingStrategy(float iouThres):
+iouThreshold(iouThres), ratio(2.0f), maxAge(3), trackingTime(0.0f), trackingCount(0)
+{
+}
+
 TrackingStrategy::TrackingStrategy(int Id):
-firstDetectedId(Id),ratio(2.0f),maxAge(3), trackingTime(0.0f), trackingCount(0)
+firstDetectedId(Id),ratio(2.0f),maxAge(3), trackingTime(0.0f), trackingCount(0),iouThreshold(0.25)
 {
 	objectDetection = new YOLOObjectDetection();
 }

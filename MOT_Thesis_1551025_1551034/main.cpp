@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
 	OutputAllObjectPose outputAllPose;
 	bool isTracked = false;
 	string chosenDetector = "agast";
-	string chosenDescriptor = "brief";
+	string chosenDescriptor = "latch";
 	string trackingMethod = "all";//"IoUMatching";
 	if (argc == 2)
 	{
@@ -109,7 +109,8 @@ int main(int argc, char** argv) {
 	}
 	if (trackingMethod.compare("all")==0)
 	{
-		trackingMethodVector =  { "IoUMatching","ImageMatching","IoU" , "KCF","Sort","CSRT" };
+		trackingMethodVector =  {"CSRT", "KCF","ImageMatching","IoU" , "KCF","CSRT" };
+		//trackingMethodVector = { "Sort" };
 	}
 	else {
 		trackingMethodVector.push_back(trackingMethod);
@@ -133,6 +134,7 @@ int main(int argc, char** argv) {
 			clock_t start = clock();
 			DroneSlam* slam = new DroneSlam(outCamPose, outObjectPoseTmp);
 			OutputPose outputPose;
+			//slam->setMotionCompensation(true);
 			slam->setDetectDescriptorMethod(chosenDetector, chosenDescriptor);
 			slam->setGroundTruthValue(groundTruthOrderList[i]);
 			slam->setTrackingMethod(trackingMethodVector[j]);

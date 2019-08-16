@@ -3,16 +3,17 @@ using namespace cv;
 bool KCFTracker::predict(cv::Mat& image, cv::Rect2d& box)
 {
 	bool checkTrack = kcfTracker->update(image, box);
-	timeSinceUpdate += 1;
 	if (timeSinceUpdate > 0)
 	{
 		hitStreak = 0;
 	}
+	timeSinceUpdate += 1;
 	return checkTrack;
 }
 
-void KCFTracker::update()
+void KCFTracker::updateInternal(cv::Mat& image, cv::Rect2d box)
 {
+	kcfTracker->init(image, box);
 	timeSinceUpdate = 0;
 	hitStreak++;
 }
@@ -28,12 +29,11 @@ KCFTracker::~KCFTracker()
 {
 }
 
-KCFTracker::KCFTracker(cv::Mat& frame, cv::Rect& bbox)
+KCFTracker::KCFTracker(cv::Mat& frame, cv::Rect& bbox, int firstDetectedId):
+	TrackingStrategy(firstDetectedId),timeSinceUpdate(0),hitStreak(0)
 {
 	kcfTracker = TrackerKCF::create();
 	kcfTracker->init(frame, bbox);
-	timeSinceUpdate = 0;
-	hitStreak = 0;
 }
 
 bool KCFTracker::update(cv::Mat& image, cv::Rect& bbox)
@@ -44,7 +44,6 @@ bool KCFTracker::update(cv::Mat& image, cv::Rect& bbox)
 	vector<BoundingBox> bboxList;
 	int minHits = 0;
 
-	float iouTheshold = 0.25f;
 	//use 
 	vector<Rect> predictedBoxes;
 	vector<vector<double>> iouMatrix;
@@ -128,7 +127,7 @@ bool KCFTracker::update(cv::Mat& image, cv::Rect& bbox)
 			continue;
 		}
 		//iou small
-		if (1 - iouMatrix[i][assignment[i]] < iouTheshold)
+		if (1 - iouMatrix[i][assignment[i]] < iouThreshold)
 		{
 			cout << "No Matched pair" << endl;
 		}
@@ -144,7 +143,7 @@ bool KCFTracker::update(cv::Mat& image, cv::Rect& bbox)
 	{
 		trkIdx = matchedPairs[i].x;
 		detIdx = matchedPairs[i].y;
-		update();
+		updateInternal(image, bboxList[detIdx].getRegion());
 		//if first time update and continously tracked hit >2 or hit streak just start
 		//or it hit for the first two frame.
 	}
@@ -154,7 +153,7 @@ bool KCFTracker::update(cv::Mat& image, cv::Rect& bbox)
 		bbox = boxHelper.normalizeCroppedBox(bboxList[detIdx].getRegion(), image.cols, image.rows);
 		checkTrack = true;
 	}
-	//allow 2 frames lost or delete it.
+	//allow x frames lost or delete it.
 	else if (timeSinceUpdate > maxAge)
 	{
 		//bbox = Rect(box);

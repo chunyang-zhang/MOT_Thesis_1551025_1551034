@@ -1081,6 +1081,11 @@ void DroneSlam::processFrame()
 	Mat descriptor2;
 	//groundTruth Value
 	Mat image;
+	//Motion Compensation Param
+	vector <Point2f> candidatePointBMA;
+	vector<bool> status2;
+	vector<int> assignment;
+
 	TrackingStrategy* trackingStrategy = NULL;
 	TrackingController trackingController;
 	//GroundTruthResult
@@ -1113,6 +1118,8 @@ void DroneSlam::processFrame()
 	float MSEPosx = 0;
 	float MSEPosy = 0;
 	float MSEPosz = 0;
+	int countMC = 0;
+	float mcTime = 0;
 
 	time = getTotalProcessTime();
 	distance = getTotalDistance();
@@ -1175,6 +1182,12 @@ void DroneSlam::processFrame()
 				zMSE /= errPose.size();
 				avgFeatureTime /= (double)CLOCKS_PER_SEC;
 				avgFeatureTime /= countProcessTime;
+				if (isMotionCompensation)
+				{
+					mcTime /= (double)CLOCKS_PER_SEC;
+					mcTime /= countMC;
+					avgFeatureTime += mcTime;
+				}
 				aedCamPos = getAED();
 				outputPose.setErrorPose(Point3D(xMSE, yMSE, zMSE));
 				outputPose.setAED(aedCamPos);
@@ -1183,6 +1196,8 @@ void DroneSlam::processFrame()
 				//Output iou tracking
 				iou50 = 1.0* countIoU50 / groundTruthList.size();
 				iou75 = 1.0* countIoU75 / groundTruthList.size();
+				iou50 = iou50 > 1 ? 1 : iou50 ;
+				iou75 = iou75 > 1 ? 1 : iou75;
 				trackingTime = trackingStrategy->getTrackingTime();
 				trackingResult.setIoU50(iou50);
 				trackingResult.setIoU75(iou75);
@@ -1386,6 +1401,17 @@ void DroneSlam::processFrame()
 
 				// tracking by KLT
 				calcOpticalFlowPyrLK(frame->preMainFrame, frame->mainFrame, prevKeyP, currKeyP, status, err, winSize, 3, termcrit, 0, 0.001);
+				if (isMotionCompensation)
+				{
+					clock_t mc_start = clock();
+					//motionCompensation->setBlockSize(20);
+					motionCompensation->performBlockMatching(frame->preMainFrame, frame->mainFrame, prevKeyP, candidatePointBMA, status2);
+					motionCompensation->findMotionPoints(currKeyP, status, assignment);
+					cout << "Assignment: " << assignment.size() << endl;
+					//set status to delete key point 
+					mcTime += clock() - mc_start;
+					countMC++;
+				}
 				image = frame->mainFrame;
 				//Detection with only the surrounding bounding box regions.
 				cvtColor(image, image, CV_GRAY2RGB);
@@ -1416,7 +1442,7 @@ void DroneSlam::processFrame()
 
 					startTracking = true;
 				}
-				if (startTracking)
+				else if (startTracking)
 				{
 					//draw groundtruth box not matter
 
@@ -1628,7 +1654,7 @@ void DroneSlam::processFrame()
 				{
 					count++;
 					curr_CameraPos = calculateCameraPose(localMap, cameraPos.back(), numInliers);
-					if (count > 30)
+					if (count > 50)
 					{
 						localMap.clear();
 						currKeyP.clear();
@@ -1638,8 +1664,9 @@ void DroneSlam::processFrame()
 					}
 
 				}
-
+				
 				//! new camera pose
+				//use old pose if isReinstall = true
 				cameraPos.push_back(curr_CameraPos);
 				cout<<("\nID = %d:\t %f %f %f", frame->id, curr_CameraPos[0], curr_CameraPos[1], curr_CameraPos[2]);
 				cout<<("\nGPS  =:\t\t  %f %f %f", GPSPose[frame->id][0], GPSPose[frame->id][1], GPSPose[frame->id][2]);
@@ -1661,6 +1688,11 @@ void DroneSlam::processFrame()
 				stream->outGPSandPose << curr_CameraPos[0] << "," << curr_CameraPos[1] << "," << curr_CameraPos[2] << endl;
 				imshow("result", result1);
 				waitKey(1);
+				if (isReinstall)
+				{
+					cout << "Use old pose. Start Reinstall." << endl;
+					continue;
+				}
 				//waitKey(0);
 				// have current camera pos, calculate stereo pos if have stereo img
 				if (frame->isStereo)
@@ -1995,6 +2027,8 @@ DroneSlam::DroneSlam(string outCamPose, string outObjectPose)
 	objectDetection = new YOLOObjectDetection();
 	//imageMatching
 	imageMatching = new ImageMatching();
+	//motion compensation
+	motionCompensation = new MotionCompensation();
 	// initial RPY
 	lastRPY.roll = lastRPY.pitch = lastRPY.yaw = 180;
 
@@ -2033,6 +2067,10 @@ DroneSlam::~DroneSlam()
 	if (stream)
 	{
 		delete stream;
+	}
+	if (motionCompensation)
+	{
+		delete motionCompensation;
 	}
 	//release matrix
 	result1.release();

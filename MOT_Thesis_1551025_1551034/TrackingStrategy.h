@@ -14,9 +14,11 @@ protected:
 	int maxAge;
 	float trackingTime;
 	int trackingCount;
+	float iouThreshold;
 public:
 	~TrackingStrategy();
 	TrackingStrategy();
+	TrackingStrategy(float iouThres);
 	TrackingStrategy(int Id);
 	float getTrackingTime();
 	virtual bool update(cv::Mat &image, cv::Rect& bbox) = 0;

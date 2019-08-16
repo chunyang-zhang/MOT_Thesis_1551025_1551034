@@ -23,12 +23,12 @@ SortTracking::~SortTracking()
 }
 bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 {
-	Rect processBounding = Rect(0,0,image.cols,image.rows);
+	Rect processBounding;// = Rect(0, 0, image.cols, image.rows);
 	BoundingBox croppedBoxResult;
+	Mat detectFrame;
 	//get small surrounding frame
 	vector<BoundingBox> bboxList;
 	int minHits =0;
-	float iouTheshold = 0.25f;
 	//use 
 	vector<Rect_<float>> predictedBoxes;
 	vector<vector<double>> iouMatrix;
@@ -45,12 +45,17 @@ bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 
 	//Surrounding Object For Detection
 
+	processBounding = boxHelper.getNewBoundingBox(bbox, ratio, image.rows, image.cols);
+
+	//Surrounding Object For Detection
+
+	detectFrame = image(processBounding);
 	//Tracking
 	//bool ok = tracker->update(image, bbox);
 	//Detect
 
 	//box from yolo
-	bool checkDetect = objectDetection->objectDetect(image);
+	bool checkDetect = objectDetection->objectDetect(detectFrame);
 	//get box from yolo detections
 
 	if (!checkDetect)
@@ -113,7 +118,7 @@ bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 			continue;
 		}
 		//iou small
-		if (1 - iouMatrix[i][assignment[i]] < iouTheshold)
+		if (1 - iouMatrix[i][assignment[i]] < iouThreshold)
 		{
 			cout << "No Matched pair" << endl;
 		}
@@ -133,7 +138,7 @@ bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 	}
 	int count = 0;
 	//get tracker's output
-	for (auto it = trackers.begin();it != trackers.end();)
+	for (auto it = trackers.begin();it != trackers.end();it++)
 	{
 		//if first time update and continously tracked hit >2 or hit streak just start
 		//or it hit for the first two frame.
@@ -142,20 +147,14 @@ bool SortTracking::update( cv::Mat& image, cv::Rect& bbox)
 			((*it).getHitStreak() > minHits))//minHits || (*it).getHits() <= minHits))
 		{
 			bbox = boxHelper.normalizeCroppedBox((*it).getState(), image.cols, image.rows);
-			it++;
 			checkDetect = true;
 		}
-		//allow 2 frames lost or delete it.
+		//allow frames lost or delete it.
 		else if (it != trackers.end() && (*it).getTimeSinceUpdate() > maxAge)
 		{
-			it = trackers.erase(it);
+			//it = trackers.erase(it);
 			cout << "Time since update: " << (*it).getTimeSinceUpdate() << endl;
 			checkDetect = false;
-		}
-		else
-		{
-
-			it++; //keep it maxAge more frame.
 		}
 	}
 

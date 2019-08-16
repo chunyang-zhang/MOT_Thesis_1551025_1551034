@@ -19,11 +19,11 @@ void IoUTracking::update()
 
 bool IoUTracking::predict()
 {
-	timeSinceUpdate += 1;
 	if (timeSinceUpdate > 0)
 	{
 		hitStreak = 0;
 	}
+	timeSinceUpdate += 1;
 	return true;
 }
 
@@ -44,7 +44,6 @@ bool IoUTracking::update( cv::Mat& image, cv::Rect& bbox)
 	unsigned int detNum = 0;//l
 	HungarianAlgorithm HungAlgo;
 	int minHits = 0;
-	float iouThreshold = 0.25f;
 
 	processBounding = boxHelper.getNewBoundingBox(bbox, ratio, image.rows, image.cols);
 
