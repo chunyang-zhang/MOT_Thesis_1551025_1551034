@@ -176,7 +176,8 @@ bool MotionCompensation::findMotionPoints(vector<cv::Point2f>& currKeyPoints,vec
 		Point p2 = currKeyPoints[i];
 		float eD = euclideanDistance(p1,p2);
 		//The distance to the moving point is small and its moving too far away compare to other points
-		if (eD < 2 && candidateDistances[i] >= acceptDistance)
+		float accept_range = sqrt(2*stepSize*stepSize);
+		if (eD < accept_range && candidateDistances[i] >= acceptDistance)
 		{
 			assignment.push_back(i);
 		}

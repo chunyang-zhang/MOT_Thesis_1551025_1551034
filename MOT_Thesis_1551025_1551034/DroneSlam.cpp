@@ -1,15 +1,6 @@
 #include "DroneSlam.h"
 using namespace cv;
-Point seed;
-int seedId = -1;
-void onMouse(int event, int x, int y, int, void*);
-void onMouse(int event, int x, int y, int, void*)
-{
-	if (event != EVENT_LBUTTONDOWN)
-		return;
 
-	seed = Point(x, y);
-}
 /*
 Write: 
 Feature Observation 
@@ -576,12 +567,12 @@ Point3D DroneSlam::ransac2PCameraPose(const Mat3x3Vector& allA, const Point3DVec
 	//The number of samples > 2
 	if (nSamples < Config::numPointsRANSAC)
 	{
-		cout << endl << "DEBUG-- localMap.size()<2";
+		cout  << "DEBUG-- localMap.size()<2"<<endl;
 		return cameraPosRes;
 	}
 
 	//! for all RANSAC iterations, do:
-	//loop = 50
+	//loop = 200
 	for (int i = 0; i < Config::loopRANSAC; i++)
 	{
 		double curErr = 0;
@@ -630,8 +621,8 @@ Point3D DroneSlam::ransac2PCameraPose(const Mat3x3Vector& allA, const Point3DVec
 			cameraPosRes = curPos;
 		}
 	}
-	cout << endl << "RANSAC error = " << error;
-	cout << endl << "Number of RANSAC points = " << inliers.size();
+	cout << "RANSAC error = " << error << endl;
+	cout << "Number of RANSAC points = " << inliers.size() << endl;
 	//result list index of inliers
 	resultInliers = inliers;
 
@@ -1527,7 +1518,7 @@ void DroneSlam::processFrame()
 				{
 					count++;
 					curr_CameraPos = calculateCameraPose(localMap, cameraPos.back(), numInliers);
-					if (count > 30)
+					if (count > Config::MINIMUM_RANSAC_LOOP)
 					{
 						localMap.clear();
 						currKeyP.clear();
@@ -1540,8 +1531,8 @@ void DroneSlam::processFrame()
 
 				//! new camera pose
 				cameraPos.push_back(curr_CameraPos);
-				cout<<("\nID = %d:\t %f %f %f", frame->id, curr_CameraPos[0], curr_CameraPos[1], curr_CameraPos[2]);
-				cout<<("\nGPS  =:\t\t  %f %f %f", GPSPose[frame->id][0], GPSPose[frame->id][1], GPSPose[frame->id][2]);
+				cout << "ID "<< frame->id <<" = "<< curr_CameraPos[0] <<" "<< curr_CameraPos[1] <<" "<< curr_CameraPos[2] << endl;
+				cout << "GPS = " << GPSPose[frame->id][0] << " " << GPSPose[frame->id][1] << " " << GPSPose[frame->id][2] << endl;
 				
 				Point3D err_p;
 				for (int i = 0; i < 3; i++)
@@ -1554,12 +1545,16 @@ void DroneSlam::processFrame()
 				zMSE += pow(err_p[2],2);
 				
 				//print error
-				cout<<("\nERROR = :\t\t %f %f %f \n\n\n", err_p[0], err_p[1], err_p[2]);
-				circle(result1, Point(curr_CameraPos[0], curr_CameraPos[1] +150), 1, Scalar(0, 255, 0), 1, 8);
+				cout << "ERROR = " << err_p[0] << "\t" << err_p[1] << "\t" << err_p[2] << endl;
+				circle(result1, Point(curr_CameraPos[0], curr_CameraPos[1] +Config::Y_COORD_ADDON), 1, Scalar(0, 255, 0), 1, 8);
 				//result2.at<Vec3b>(Point(frame->id*2, (curr_CameraPos[0]-gps_pose[frame->id][0])*10+150)) = Vec3b(0, 255, 0);
 				stream->outGPSandPose << curr_CameraPos[0] << "," << curr_CameraPos[1] << "," << curr_CameraPos[2] << endl;
 				imshow("result", result1);
 				waitKey(1);
+				if (isReinstall)
+				{
+					continue;
+				}
 				//waitKey(0);
 				// have current camera pos, calculate stereo pos if have stereo img
 				if (frame->isStereo)
@@ -1725,7 +1720,7 @@ void DroneSlam::drawGPSResult(Mat& result)
 		file >> point.x >> point.y >> z;
 		GPSPose.push_back(Point3D(point.x,point.y,z));
 		//draw point on map
-		circle(result, Point(point.x, point.y + 150),1,Scalar(255,0,0));//
+		circle(result, Point(point.x, point.y + Config::Y_COORD_ADDON),1,Scalar(255,0,0));//
 	}
 	file.close();
 }
@@ -1868,7 +1863,7 @@ DroneSlam::DroneSlam(string outCamPose)
 	// read all data from IMU
 	readAllIMU();
 
-	result1 = Mat(333, 333, CV_8UC3, Scalar(0, 0, 0));
+	result1 = Mat(400, 400, CV_8UC3, Scalar(0, 0, 0));
 	/*result2 = Mat(1000,1000, CV_8UC3, Scalar(0, 0, 0));*/
 	drawGPSResult(result1);
 

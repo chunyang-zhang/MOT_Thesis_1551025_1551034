@@ -91,7 +91,8 @@ private:
 	MotionCompensation* motionCompensation;
 	bool isMotionCompensation;
 
-
+	static int MINIMUM_RANSAC_LOOP;
+	static int Y_COORD_ADDON;
 	bool isTracked;
 	bool noTracked;
 private:

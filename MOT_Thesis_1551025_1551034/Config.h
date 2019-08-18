@@ -49,6 +49,9 @@ public:
 	static int threshPointWarning;
 	static double threshGammaMax;
 	static double threshGammaMin;
+	//ransac loop
+	static int MINIMUM_RANSAC_LOOP;
+	static int Y_COORD_ADDON;
 
 };
 
