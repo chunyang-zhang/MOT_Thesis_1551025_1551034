@@ -1548,7 +1548,7 @@ void DroneSlam::processFrame()
 				cout << "ERROR = " << err_p[0] << "\t" << err_p[1] << "\t" << err_p[2] << endl;
 				circle(result1, Point(curr_CameraPos[0], curr_CameraPos[1] +Config::Y_COORD_ADDON), 1, Scalar(0, 255, 0), 1, 8);
 				//result2.at<Vec3b>(Point(frame->id*2, (curr_CameraPos[0]-gps_pose[frame->id][0])*10+150)) = Vec3b(0, 255, 0);
-				stream->outGPSandPose << curr_CameraPos[0] << "," << curr_CameraPos[1] << "," << curr_CameraPos[2] << endl;
+				stream->outGPSandPose << curr_CameraPos[0] << "\t" << curr_CameraPos[1] << "\t" << curr_CameraPos[2] << endl;
 				imshow("result", result1);
 				waitKey(1);
 				if (isReinstall)

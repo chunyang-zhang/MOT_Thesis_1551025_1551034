@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
 	string matchingMethod;
 	vector<string> trackingMethodVector;
 	string outFolder = "Output/";
-	string outCamPose = outFolder+ "cam_pose.txt";
+	string outCamPose = "cam_pose.txt";
 	string outObjectPose = outFolder+ "object_pose";
 	string outErrorObjectPose = outFolder + "error_object_pose";
 	string outTrackingResult = outFolder + "tracking_result_";
@@ -68,10 +68,10 @@ int main(int argc, char** argv) {
 	string chosenDescriptor = "brief";
 	string trackingMethod = "all";//"IoUMatching";
 	//vector<string> detector = {  "star", "brisk" ,"orb", "fast" };
-	vector<string> detector = { "brisk","orb","fast", "gftt","star","agast"};
-	vector<string> descriptor = {"brief", "daisy", "freak","latch" };
-	//vector<string> detector = { "gftt" };
-	//vector<string> descriptor = { "brief" };
+	//vector<string> detector = { "gftt","brisk","orb","fast","star","agast"};
+	//vector<string> descriptor = {"brief", "daisy", "freak","latch" };
+	vector<string> detector = { "gftt" };
+	vector<string> descriptor = { "brief" };
 	if (argc == 2)
 	{
 		runMethod = argv[1];
@@ -204,7 +204,7 @@ int main(int argc, char** argv) {
 			clock_t start = clock();
 			DroneSlam* slam = new DroneSlam(outCamPose);
 			slam->setDetectDescriptorMethod(det, des);
-			slam->setMotionCompensation(true);
+			//slam->setMotionCompensation(true);
 			slam->processFrame();
 
 			ofstream fout(outputFile);
