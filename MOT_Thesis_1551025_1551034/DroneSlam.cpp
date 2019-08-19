@@ -1654,7 +1654,7 @@ void DroneSlam::processFrame()
 				{
 					count++;
 					curr_CameraPos = calculateCameraPose(localMap, cameraPos.back(), numInliers);
-					if (count > 50)
+					if (count > Config::MINIMUM_RANSAC_LOOP)
 					{
 						localMap.clear();
 						currKeyP.clear();
@@ -1683,7 +1683,7 @@ void DroneSlam::processFrame()
 				
 				//print error
 				cout<<("\nERROR = :\t\t %f %f %f \n\n\n", err_p[0], err_p[1], err_p[2]);
-				circle(result1, Point(curr_CameraPos[0], curr_CameraPos[1] +150), 1, Scalar(0, 255, 0), 1, 8);
+				circle(result1, Point(curr_CameraPos[0], curr_CameraPos[1] + Config::Y_COORD_ADDON), 1, Scalar(0, 255, 0), 1, 8);
 				//result2.at<Vec3b>(Point(frame->id*2, (curr_CameraPos[0]-gps_pose[frame->id][0])*10+150)) = Vec3b(0, 255, 0);
 				stream->outGPSandPose << curr_CameraPos[0] << "," << curr_CameraPos[1] << "," << curr_CameraPos[2] << endl;
 				imshow("result", result1);
@@ -1858,7 +1858,7 @@ void DroneSlam::drawGPSResult(Mat& result)
 		file >> point.x >> point.y >> z;
 		GPSPose.push_back(Point3D(point.x,point.y,z));
 		//draw point on map
-		circle(result, Point(point.x, point.y + 150),1,Scalar(255,0,0));//
+		circle(result, Point(point.x, point.y + Config::Y_COORD_ADDON),1,Scalar(255,0,0));//
 	}
 	file.close();
 }
@@ -1963,7 +1963,8 @@ bool DroneSlam::getGroundTruthForTracking(int startTrackingFrame, cv::Mat& image
 		trackingGroundTruth = groundTruthList[frameCount];
 			
 	}
-	groundTruthMat = image(trackingGroundTruth.getBoundingBox());
+	Rect boundingbox = boxHelper.getNewBoundingBox(trackingGroundTruth.getBoundingBox(), 2.0,image.rows,image.cols);
+	groundTruthMat = image(boundingbox);
 	bool checkValue = objectDetection->objectDetect(groundTruthMat);
 	if (!checkValue)
 	{
@@ -2036,7 +2037,7 @@ DroneSlam::DroneSlam(string outCamPose, string outObjectPose)
 	// read all data from IMU
 	readAllIMU();
 
-	result1 = Mat(333, 333, CV_8UC3, Scalar(0, 0, 0));
+	result1 = Mat(400, 400, CV_8UC3, Scalar(0, 0, 0));
 	/*result2 = Mat(1000,1000, CV_8UC3, Scalar(0, 0, 0));*/
 	drawGPSResult(result1);
 

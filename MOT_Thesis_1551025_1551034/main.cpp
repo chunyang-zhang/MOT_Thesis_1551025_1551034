@@ -109,8 +109,8 @@ int main(int argc, char** argv) {
 	}
 	if (trackingMethod.compare("all")==0)
 	{
-		trackingMethodVector =  {"CSRT", "KCF","ImageMatching","IoU" , "KCF","CSRT" };
-		//trackingMethodVector = { "Sort" };
+		//trackingMethodVector =  {"CSRT", "KCF","ImageMatching","IoU","Sort","IoUMatching" };
+		trackingMethodVector = { "IoU","Sort","IoUMatching","ImageMatching" };
 	}
 	else {
 		trackingMethodVector.push_back(trackingMethod);
