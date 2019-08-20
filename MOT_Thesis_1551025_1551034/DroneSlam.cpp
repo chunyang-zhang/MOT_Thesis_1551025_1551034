@@ -1844,7 +1844,7 @@ void DroneSlam::setDetectDescriptorMethod(string detector, string descriptor)
 
 void DroneSlam::drawGPSResult(Mat& result)
 {
-	string pathIMU = "./DATA/all_GPS_pose.txt";
+	string pathIMU = "./DATA/odometry_pose.txt";
 	ifstream file(pathIMU);
 	string str;
 	if (!file.is_open ()) {

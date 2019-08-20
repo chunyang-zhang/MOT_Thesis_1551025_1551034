@@ -362,7 +362,8 @@ confThreshold(0.5),nmsThreshold(0.5),inpWidth(416),inpHeight(416)
 	net = readNetFromDarknet(modelConfiguration, modelWeights);
 	net.setPreferableBackend(DNN_BACKEND_OPENCV);
 	//to use for cpu, GPU: DNN_TARGET_OPENCL
-	net.setPreferableTarget(DNN_TARGET_CPU);
+	//net.setPreferableTarget(DNN_TARGET_CPU);
+	net.setPreferableTarget(DNN_TARGET_OPENCL);
 	iouThreshold = 0.50f;
 
 }
