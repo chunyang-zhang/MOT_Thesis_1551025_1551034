@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 	string matchingMethod;
 	vector<string> trackingMethodVector;
 	string outFolder = "Output/";
-	string outCamPose = outFolder+ "cam_pose.txt";
+	string outCamPose = "cam_pose.txt";
 	string outObjectPose = outFolder+ "object_pose";
 	string outErrorObjectPose = outFolder + "error_object_pose";
 	string outTrackingResult = outFolder + "tracking_result_";
@@ -109,8 +109,8 @@ int main(int argc, char** argv) {
 	}
 	if (trackingMethod.compare("all")==0)
 	{
-		//trackingMethodVector =  {"CSRT", "KCF","ImageMatching","IoU","Sort","IoUMatching" };
-		trackingMethodVector = { "IoU","Sort","IoUMatching","ImageMatching" };
+		trackingMethodVector =  {"IoU","Sort","IoUMatching","CSRT", "KCF","ImageMatching" };
+		//trackingMethodVector = { "IoU","Sort","IoUMatching","ImageMatching" };
 	}
 	else {
 		trackingMethodVector.push_back(trackingMethod);
