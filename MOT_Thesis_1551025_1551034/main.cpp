@@ -67,11 +67,11 @@ int main(int argc, char** argv) {
 	string chosenDetector = "gftt";
 	string chosenDescriptor = "brief";
 	string trackingMethod = "all";//"IoUMatching";
-	//vector<string> detector = {  "star", "brisk" ,"orb", "fast" };
-	vector<string> detector = { "gftt","brisk","orb","fast","star","agast"};
-	vector<string> descriptor = {"brief", "daisy", "freak","latch" };
-	//vector<string> detector = { "gftt" };
-	//vector<string> descriptor = { "brief" };
+	//vector<string> detector = {  "fast", "agast" , "star" };
+	//vector<string> detector = { "gftt","brisk","orb","fast","star","agast"};
+	//vector<string> descriptor = { "daisy","brief", "freak","latch" };
+	vector<string> detector = {"orb" };
+	vector<string> descriptor = { "" };
 	if (argc == 2)
 	{
 		runMethod = argv[1];
