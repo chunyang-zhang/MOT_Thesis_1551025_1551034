@@ -63,8 +63,8 @@ int main(int argc, char** argv) {
 	vector<OutputObjectPose> outputObjectPoseList;
 	OutputAllObjectPose outputAllPose;
 	bool isTracked = false;
-	string chosenDetector = "agast";
-	string chosenDescriptor = "latch";
+	string chosenDetector = "gftt";
+	string chosenDescriptor = "brief";
 	string trackingMethod = "all";//"IoUMatching";
 	if (argc == 2)
 	{

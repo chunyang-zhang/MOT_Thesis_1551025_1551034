@@ -1963,7 +1963,7 @@ bool DroneSlam::getGroundTruthForTracking(int startTrackingFrame, cv::Mat& image
 		trackingGroundTruth = groundTruthList[frameCount];
 			
 	}
-	Rect boundingbox = boxHelper.getNewBoundingBox(trackingGroundTruth.getBoundingBox(), 2.0,image.rows,image.cols);
+	Rect boundingbox = boxHelper.getNewBoundingBox(trackingGroundTruth.getBoundingBox(), 1,image.rows,image.cols);
 	groundTruthMat = image(boundingbox);
 	bool checkValue = objectDetection->objectDetect(groundTruthMat);
 	if (!checkValue)
